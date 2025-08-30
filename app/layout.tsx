@@ -1,15 +1,18 @@
+// "use client";
+
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Jost } from "next/font/google";
 import "./globals.css";
+import Header from "@/components/Header/Header";
+import Providers from "./Providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jost = Jost({
   subsets: ["latin"],
+  weight: ["100","200","300","400","500","600","700","800","900"], // choose weights you need
+  variable: "--font-jost", // optional: for CSS variable usage
 });
 
 export const metadata: Metadata = {
@@ -19,15 +22,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${jost.variable} font-sans`}
       >
-        {children}
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
+        <ToastContainer position="top-right" autoClose={3000} />
       </body>
     </html>
   );
