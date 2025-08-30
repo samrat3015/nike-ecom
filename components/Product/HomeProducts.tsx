@@ -21,9 +21,11 @@ const Products = () => {
   return (
     <div className="container py-8 mx-auto">
       {loading ? (
-        <p className="text-center text-gray-500">Loading...</p>
+        // <p className="text-center text-gray-500">Loading...</p> 
+        ""
       ) : error ? (
-        <p className="text-center text-red-500">Error: {error}</p>
+        // <p className="text-center text-red-500">Error: {error}</p>
+        ""
       ) : (
         <div>
           {Object.keys(products).map((category) => (

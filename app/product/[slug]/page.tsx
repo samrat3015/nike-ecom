@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Heart, Star, ShoppingCart, Minus, Plus, Share2, Truck, ShieldCheck } from 'lucide-react';
 import {addToCart, removeFromCart} from "@/store/slices/cartSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -78,6 +79,9 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   const addToCartloading = useSelector((state: any) => state.cart.loading);
 
     const dispatch = useDispatch();
+
+  const router = useRouter();
+
 
   // Unwrap params using React.use
   const params = React.use(paramsPromise);
@@ -169,15 +173,45 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
 
   
 
-  const handleAddToCart = () => {
+  const [isAddToCartLoading, setIsAddToCartLoading] = useState(false);
+  const [isbuyNowLoading, setIsBuyNowLoading] = useState(false);
 
+  const handleAddToCart = async () => {
     const payload = {
       product_id: product!.id,
-      quantity: quantity,
+      quantity,
       product_variation_id: selectedVariation ? selectedVariation.id : null,
     };
-    dispatch(addToCart(payload));
-  }
+
+    try {
+      setIsAddToCartLoading(true);
+      await dispatch(addToCart(payload)).unwrap(); // waits until the async action resolves
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsAddToCartLoading(false);
+    }
+  };
+
+
+  const handleBuyNow = async () => {
+    const payload = {
+      product_id: product!.id,
+      quantity,
+      product_variation_id: selectedVariation ? selectedVariation.id : null,
+    };
+
+    try {
+      setIsBuyNowLoading(true);
+      await dispatch(addToCart(payload)).unwrap();
+      router.push("/checkout");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsBuyNowLoading(false);
+    }
+  };
+
 
   // Calculate discount percentage
   const discountPercentage = product?.previous_price
@@ -374,13 +408,13 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
               <button
                 onClick={handleAddToCart}
                 disabled={
-                  addToCartloading || 
+                  isAddToCartLoading || 
                   (product.variations.length > 0 && (!selectedVariation || selectedVariation.stock === 0)) || 
                   (product.variations.length === 0 && product.stock === 0)
                 }
                 className={`w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2`}
               >
-                {addToCartloading ? (
+                {isAddToCartLoading ? (
                   <>
                     {/* Spinning loader */}
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
@@ -393,8 +427,22 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
                   </>
                 )}
               </button>
-              <button className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-4 px-6 rounded-xl transition-colors">
-                Buy Now
+              <button disabled={
+                isbuyNowLoading ||
+                product.variations.length > 0 && (!selectedVariation || selectedVariation.stock === 0)
+              } onClick={handleBuyNow} className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2">
+                {isbuyNowLoading ? (
+                  <>
+                    {/* Spinning loader */}
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                    <span>Buying...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-5 h-5" />
+                    <span>Buy Now</span>
+                  </>
+                )}
               </button>
             </div>
 

@@ -29,8 +29,8 @@ const Slider = () => {
   return (
     <div>
       <section>
-        {sliderLoading && <p>Loading slider...</p>}
-        {sliderError && <p>Error: {sliderError}</p>}
+        {sliderLoading && "" }
+        {sliderError && ""}
 
         {slider && slider.length > 0 ? (
           <div className="slider-container">

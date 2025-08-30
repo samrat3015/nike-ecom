@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCart, removeFromCart, updateCartQuantity } from "@/store/slices/cartSlice";
 import CartSkeleton from "@/components/Skeletons/CartSkeleton";
+import Link from "next/link";
 
 export default function Cart() {
   const dispatch = useDispatch();
@@ -140,12 +141,9 @@ export default function Cart() {
               </div>
 
               <div className="mt-8 space-y-3">
-                <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
+                <Link href="/checkout" className="w-full block text-center bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
                   Member Checkout
-                </button>
-                <button className="w-full border-2 border-gray-300 text-gray-900 py-3 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors">
-                  Guest Checkout
-                </button>
+                </Link>
               </div>
 
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">

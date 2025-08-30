@@ -26,16 +26,21 @@ const { items_count } = useSelector((state: any) => state.cart);
     dispatch(fetchCart());
   }, [dispatch]);
 
-  if (categoriesLoading || settingsLoading) return <p>Loading...</p>;
-  if (categoriesError || settingsError) return <p>Error: {categoriesError || settingsError}</p>;
+  if (categoriesLoading || settingsLoading) return false;
+  if (categoriesError || settingsError) return false;
 
   return (
     <div className="header_area relative z-10">
       
       <div className="header_top bg-black py-2">
         <div className="container">
-          <div className="text-center text-white">
-            <p>{settings?.top_notice}</p>
+          <div className="flex justify-between text-white">
+            <div className="top_notice">
+              <p>{settings?.top_notice}</p>
+            </div>
+            <div className="top_login">
+              <Link href="/login" className="hover:underline text-white" >login</Link>
+            </div>
           </div>
         </div>
       </div>
