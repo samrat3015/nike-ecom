@@ -2,10 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { Heart, Star, ShoppingCart, Minus, Plus, Share2, Truck, ShieldCheck } from 'lucide-react';
-import {addToCart, removeFromCart} from "@/store/slices/cartSlice";
+import { addToCart } from "@/store/slices/cartSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/thumbs';
+import 'swiper/css/free-mode';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -73,20 +78,19 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   const [loading, setLoading] = useState(true);
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: AttributeValue | null }>({});
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
-  // const [isWishlisted, setIsWishlisted] = useState(false);
-  const addToCartloading = useSelector((state: any) => state.cart.loading);
-
-    const dispatch = useDispatch();
-
+  const addToCartLoading = useSelector((state: any) => state.cart.loading);
+  const dispatch = useDispatch();
   const router = useRouter();
 
+  // Swiper states
+  const [mainSwiper, setMainSwiper] = useState<any>(null);
+  const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
 
   // Unwrap params using React.use
   const params = React.use(paramsPromise);
 
-  // Fetch product data
+  // Fetch product data and set initial state
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -104,12 +108,21 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
           setSelectedAttributes(initialAttributes);
           const initialVariation = findVariationByAttributes(productData.variations, initialAttributes);
           setSelectedVariation(initialVariation || null);
-          setSelectedImage(initialVariation?.image_path || productData.feature_image);
+
+          // Set initial slide to variation image or feature image
+          const imageToShow = initialVariation?.image_path || productData.feature_image;
+          const index = [...new Set([
+            productData.feature_image,
+            ...(productData.gallery_images ? JSON.parse(productData.gallery_images) : []),
+            ...productData.variations.map((v) => v.image_path),
+          ])].filter(Boolean).findIndex((img) => img === imageToShow);
+          if (mainSwiper && index !== -1) {
+            mainSwiper.slideTo(index);
+          }
         } else {
           // For simple products, no variation or attributes
           setSelectedVariation(null);
           setSelectedAttributes({});
-          setSelectedImage(productData.feature_image);
         }
         setLoading(false);
       } catch (error) {
@@ -119,7 +132,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
     };
 
     fetchProduct();
-  }, [params.slug]);
+  }, [params.slug, mainSwiper]);
 
   // Group attributes by name for variable products
   const getAttributeGroups = (variations: Variation[]) => {
@@ -147,7 +160,6 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
         return selectedAttrs[attrName]?.id === attr.value.id;
       })
     );
-    //console.log("Selected Attributes:", selectedAttrs, "Matched Variation:", variation); // Debugging
     return variation || null;
   };
 
@@ -155,11 +167,18 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   const handleAttributeChange = (attrName: string, value: AttributeValue) => {
     const newSelectedAttributes = { ...selectedAttributes, [attrName]: value };
     setSelectedAttributes(newSelectedAttributes);
-    //console.log("Updated Selected Attributes:", newSelectedAttributes); // Debugging
     const variation = findVariationByAttributes(product!.variations, newSelectedAttributes);
     setSelectedVariation(variation);
-    setSelectedImage(variation?.image_path || product!.feature_image);
     setQuantity(1); // Reset quantity when variation changes
+
+    // Slide to the variation image if available
+    if (variation && mainSwiper) {
+      const imageToShow = variation.image_path || product!.feature_image;
+      const index = uniqueImages.findIndex((img) => img === imageToShow);
+      if (index !== -1) {
+        mainSwiper.slideTo(index);
+      }
+    }
   };
 
   // Handle quantity change
@@ -171,10 +190,8 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
     }
   };
 
-  
-
   const [isAddToCartLoading, setIsAddToCartLoading] = useState(false);
-  const [isbuyNowLoading, setIsBuyNowLoading] = useState(false);
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
 
   const handleAddToCart = async () => {
     const payload = {
@@ -185,14 +202,13 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
 
     try {
       setIsAddToCartLoading(true);
-      await dispatch(addToCart(payload)).unwrap(); // waits until the async action resolves
+      await dispatch(addToCart(payload)).unwrap();
     } catch (error) {
       console.error(error);
     } finally {
       setIsAddToCartLoading(false);
     }
   };
-
 
   const handleBuyNow = async () => {
     const payload = {
@@ -211,15 +227,6 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
       setIsBuyNowLoading(false);
     }
   };
-
-
-  // Calculate discount percentage
-  const discountPercentage = product?.previous_price
-    ? Math.round(
-        ((parseFloat(product.previous_price) - parseFloat(selectedVariation?.price || product.price)) /
-        parseFloat(product.previous_price)) * 100
-      )
-    : 0;
 
   if (loading) {
     return (
@@ -249,8 +256,56 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   ];
   const uniqueImages = [...new Set(allImages)].filter(Boolean);
 
+  // Calculate prices with main + variation
+  const basePrice = parseFloat(product.price);
+  const basePreviousPrice = product.previous_price ? parseFloat(product.previous_price) : 0;
+  const variationPrice = selectedVariation ? parseFloat(selectedVariation.price) : 0;
+  const currentPrice = basePrice + variationPrice;
+  const previousPrice = basePreviousPrice + variationPrice;
+
+  // Calculate discount percentage
+  const discountPercentage = previousPrice > 0
+    ? Math.round(((previousPrice - currentPrice) / previousPrice) * 100)
+    : 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <style jsx>{`
+        .swiper-button-prev,
+        .swiper-button-next {
+          background-color: rgba(0, 0, 0, 0.5);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.3s;
+        }
+        .swiper-button-prev:hover,
+        .swiper-button-next:hover {
+          background-color: rgba(0, 0, 0, 0.7);
+        }
+        .swiper-button-prev::after,
+        .swiper-button-next::after {
+          font-size: 16px;
+          font-weight: bold;
+        }
+        .swiper-slide img {
+          height: auto;
+          width: 100%;
+          object-fit: contain;
+        }
+        .thumbs-swiper .swiper-slide {
+          opacity: 0.4;
+          cursor: pointer;
+        }
+        .thumbs-swiper .swiper-slide-thumb-active {
+          opacity: 1;
+          border: 2px solid #2563eb;
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm">
@@ -264,43 +319,55 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
-              <img
-                src={selectedImage}
-                alt={product.name}
-                className="w-full object-cover"
-              />
+            <div className="relative bg-white h-auto rounded-2xl overflow-hidden">
+              <Swiper
+                modules={[Navigation, Thumbs, FreeMode]}
+                navigation={{
+                  prevEl: '.swiper-button-prev',
+                  nextEl: '.swiper-button-next',
+                }}
+                thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
+                spaceBetween={10}
+                slidesPerView={1}
+                onSwiper={setMainSwiper}
+              >
+                {uniqueImages.map((image, index) => (
+                  <SwiperSlide key={index}>
+                    <img
+                      src={image}
+                      alt={`${product.name} view ${index + 1}`}
+                      className="w-full object-contain"
+                    />
+                  </SwiperSlide>
+                ))}
+                <div className="swiper-button-prev"></div>
+                <div className="swiper-button-next"></div>
+              </Swiper>
               {discountPercentage > 0 && (
-                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                <div className="absolute z-10 top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                   -{discountPercentage}%
                 </div>
               )}
-              {/* <button
-                onClick={() => setIsWishlisted(!isWishlisted)}
-                className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
-              >
-                <Heart
-                  className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
-                />
-              </button> */}
             </div>
-            <div className="grid grid-cols-4 gap-3">
-              {uniqueImages.slice(0, 4).map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(image)}
-                  className={`relative bg-white rounded-lg overflow-hidden border-2 transition-all aspect-square ${
-                    selectedImage === image ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
+            <Swiper
+              onSwiper={setThumbsSwiper}
+              spaceBetween={10}
+              slidesPerView={4}
+              freeMode={true}
+              watchSlidesProgress={true}
+              modules={[FreeMode, Navigation, Thumbs]}
+              className="thumbs-swiper"
+            >
+              {uniqueImages.map((image, index) => (
+                <SwiperSlide key={index}>
                   <img
                     src={image}
-                    alt={`Product view ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    alt={`${product.name} thumbnail ${index + 1}`}
+                    className="w-full h-auto object-contain rounded-lg border border-gray-200"
                   />
-                </button>
+                </SwiperSlide>
               ))}
-            </div>
+            </Swiper>
           </div>
 
           {/* Product Information */}
@@ -324,11 +391,11 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
             {/* Pricing */}
             <div className="flex items-baseline space-x-3">
               <span className="text-3xl font-bold text-gray-900">
-                ৳{selectedVariation?.price || product.price}
+                ৳{currentPrice.toFixed(2)}
               </span>
               {product.previous_price && (
                 <span className="text-lg text-gray-500 line-through">
-                  ৳{product.previous_price}
+                  ৳{previousPrice.toFixed(2)}
                 </span>
               )}
               {discountPercentage > 0 && (
@@ -408,15 +475,14 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
               <button
                 onClick={handleAddToCart}
                 disabled={
-                  isAddToCartLoading || 
-                  (product.variations.length > 0 && (!selectedVariation || selectedVariation.stock === 0)) || 
+                  isAddToCartLoading ||
+                  (product.variations.length > 0 && (!selectedVariation || selectedVariation.stock === 0)) ||
                   (product.variations.length === 0 && product.stock === 0)
                 }
                 className={`w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2`}
               >
                 {isAddToCartLoading ? (
                   <>
-                    {/* Spinning loader */}
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                     <span>Adding...</span>
                   </>
@@ -427,13 +493,16 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
                   </>
                 )}
               </button>
-              <button disabled={
-                isbuyNowLoading ||
-                product.variations.length > 0 && (!selectedVariation || selectedVariation.stock === 0)
-              } onClick={handleBuyNow} className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2">
-                {isbuyNowLoading ? (
+              <button
+                disabled={
+                  isBuyNowLoading ||
+                  (product.variations.length > 0 && (!selectedVariation || selectedVariation.stock === 0))
+                }
+                onClick={handleBuyNow}
+                className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2"
+              >
+                {isBuyNowLoading ? (
                   <>
-                    {/* Spinning loader */}
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
                     <span>Buying...</span>
                   </>
