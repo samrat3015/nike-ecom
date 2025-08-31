@@ -344,7 +344,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
                 {Object.entries(getAttributeGroups(product.variations)).map(([attrName, attrGroup], index) => (
                   <div key={index}>
                     <h3 className="text-lg font-semibold mb-3">{attrName}</h3>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="flex flex-wrap gap-2">
                       {attrGroup.map((item) => {
                         const isSelected = selectedAttributes[attrName]?.id === item.value.id;
                         const isDisabled = item.stock === 0;
@@ -353,7 +353,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
                             key={item.value.id}
                             onClick={() => handleAttributeChange(attrName, item.value)}
                             disabled={isDisabled}
-                            className={`px-4 py-3 border-2 rounded-lg text-center font-medium transition-all ${
+                            className={`px-3 py-1 border-2 rounded-lg text-center font-medium transition-all ${
                               isSelected
                                 ? 'border-blue-500 bg-blue-50 text-blue-700'
                                 : isDisabled

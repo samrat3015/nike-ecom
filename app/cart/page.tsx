@@ -142,7 +142,7 @@ export default function Cart() {
 
               <div className="mt-8 space-y-3">
                 <Link href="/checkout" className="w-full block text-center bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
-                  Member Checkout
+                  Proceed to Checkout
                 </Link>
               </div>
 

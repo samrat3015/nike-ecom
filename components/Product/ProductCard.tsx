@@ -8,9 +8,9 @@ const ProductCard = ({ product }) => {
             <div className="card-image relative aspect-square overflow-hidden">
                 <Link href={`/product/${product.slug}`}><img src={product.feature_image} alt="" className="w-full h-full object-cover" /></Link>
             </div>
-            <div className="card-body">
-                <Link href={`/product/${product.slug}`}><h2 className="card-title">{product.name}</h2></Link>
-                <div className="price_area">
+            <div className="card-body pt-3">
+                <Link href={`/product/${product.slug}`}><h2 className="card-title font-semibold">{product.name}</h2></Link>
+                <div className="price_area pt-1">
                     <p>TK. {product.price} 
                         {product?.previous_price && product?.previous_price > 0 && (
                             <span className="line-through text-gray-600 pl-1">TK. ({product.previous_price})</span>

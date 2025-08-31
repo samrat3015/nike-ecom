@@ -152,6 +152,7 @@ export const fetchCart = createAsyncThunk(
 const cartSlice = createSlice({
   name: "cart",
   initialState: {
+    cartId: null,
     items: [], // Always start with empty array
     total: 0,
     items_count: 0,
@@ -229,6 +230,7 @@ const cartSlice = createSlice({
         
         if (payload && payload.data) {
           // If API returns { data: { items: [...], total: ..., items_count: ... } }
+          state.cartId = payload.data.id;
           state.items = Array.isArray(payload.data.items) ? payload.data.items : [];
           state.total = payload.data.total || 0;
           state.items_count = payload.data.items_count || 0;
@@ -250,6 +252,7 @@ const cartSlice = createSlice({
         }
       })
       .addCase(fetchCart.rejected, (state, action) => {
+        state.cartId = null;
         state.loading = false;
         state.error = action.payload;
         // Keep items as empty array on error
