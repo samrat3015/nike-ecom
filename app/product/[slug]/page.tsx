@@ -11,6 +11,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 import 'swiper/css/free-mode';
+import { motion, AnimatePresence } from "framer-motion";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -472,7 +473,8 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
 
             {/* Add to Cart Buttons */}
             <div className="space-y-3">
-              <button
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={handleAddToCart}
                 disabled={
                   isAddToCartLoading ||
@@ -492,8 +494,9 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
                     <span>Add to Cart</span>
                   </>
                 )}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 disabled={
                   isBuyNowLoading ||
                   (product.variations.length > 0 && (!selectedVariation || selectedVariation.stock === 0))
@@ -512,7 +515,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
                     <span>Buy Now</span>
                   </>
                 )}
-              </button>
+              </motion.button>
             </div>
 
             {/* Features */}
