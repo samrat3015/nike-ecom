@@ -186,7 +186,7 @@ const SearchModel = ({ logo, onClose }) => {
             animate="visible"
             exit="hidden"
             transition={{ duration: 0.3 }}
-            className="header_search_model_area shadow fixed top-0 left-0 w-full min-h-[30vh] z-50 bg-white/95 backdrop-blur-sm"
+            className="header_search_model_area shadow fixed top-0 left-0 w-full min-h-[100vh] lg:min-h-[30vh] z-60 bg-white/95 backdrop-blur-sm"
           >
             <motion.div
               variants={modalVariants}
@@ -196,7 +196,7 @@ const SearchModel = ({ logo, onClose }) => {
               className="bg-white"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between sm:px-6 px-2 py-4 border-b border-gray-200">
                 {/* Logo */}
                 <motion.div 
                   className="search_header"
@@ -287,7 +287,7 @@ const SearchModel = ({ logo, onClose }) => {
               <AnimatePresence mode="wait">
                 {searchQuery && products.length > 0 && (
                   <motion.div 
-                    className="px-6 py-6 border-t border-gray-200 max-h-[50vh] overflow-y-scroll"
+                    className="px-6 py-6 border-t border-gray-200 max-h-[100vh] lg:max-h-[70vh] overflow-y-scroll"
                     variants={productGridVariants}
                     initial="hidden"
                     animate="visible"

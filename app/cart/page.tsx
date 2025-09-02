@@ -63,7 +63,7 @@ export default function Cart() {
                 <div key={item.id} className="bg-white rounded-lg shadow-sm p-6 mb-4 hover:shadow-md transition-shadow">
                   <div className="flex flex-col sm:flex-row gap-6">
                     {/* Product Image */}
-                    <div className="sm:w-32 h-32 bg-gray-200 rounded-md overflow-hidden group">
+                    <div className="sm:w-32 w-[100px] bg-gray-200 rounded-md overflow-hidden group">
                       <img 
                         src={item.product_image} 
                         alt={item.product_name}

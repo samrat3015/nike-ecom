@@ -486,7 +486,7 @@ const Header: React.FC = () => {
 
   // Main header component
   return (
-    <div className="header_area relative z-10">
+    <div className="header_area relative z-50">
       {/* Top header bar */}
       <div className="header_top bg-black py-2">
         <div className="container">
