@@ -37,12 +37,12 @@ const Products = () => {
             return (
               <div key={categoryKey} className="mb-12">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-semibold">{categoryKey}</h2>
+                  <h2 className="md:text-xl text-base  font-semibold">{categoryKey}</h2>
                   <div className="flex items-center space-x-4">
                     {categorySlug && (
                       <Link
                         href={`/products?category_slug=${categorySlug}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-blue-600 hover:text-blue-800 font-medium text-sm sm:text-base"
                       >
                         See All
                       </Link>

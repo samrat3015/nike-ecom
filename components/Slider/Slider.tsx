@@ -52,7 +52,7 @@ const Slider = () => {
                 crossFade: true
               }}
               loop={true}
-              className="w-full h-[400px] md:h-[500px] lg:h-[90vh]"
+              className="w-full h-auto lg:h-[90vh]"
             >
               {slider.map((item: any) => (
                 <SwiperSlide key={item.id}>

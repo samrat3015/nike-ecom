@@ -75,7 +75,7 @@ const CategoryAccordion = ({ categories, selectedIds, onSelect }) => {
 export default function ProductFilter() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const searchParams = useSearchParams(); // Get URL search params
+  const searchParams = useSearchParams();
 
   const { items: categories, loading: categoriesLoading, error: categoriesError } = useSelector(
     (state) => state.categories ?? {}
@@ -93,6 +93,7 @@ export default function ProductFilter() {
   const [isClient, setIsClient] = useState(false);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false); // State for mobile filter sidebar
 
   // Parse URL parameters and update state
   const parseUrlParams = useCallback(() => {
@@ -103,7 +104,6 @@ export default function ProductFilter() {
     const sortParam = searchParams.get("sort_by") || "latest";
     const pageParam = parseInt(searchParams.get("page")) || 1;
 
-    // Parse attribute filters
     const attributeParams = {};
     for (const [key, value] of searchParams.entries()) {
       const match = key.match(/^attributes\[(.+)\]\[\]$/);
@@ -116,7 +116,6 @@ export default function ProductFilter() {
       }
     }
 
-    // Update state
     setSelectedCategoryIds(categoryIds);
     setCategorySlug(slug);
     setMinPrice(minPriceParam);
@@ -129,7 +128,7 @@ export default function ProductFilter() {
   // Handle client-side mounting and URL changes
   useEffect(() => {
     setIsClient(true);
-    parseUrlParams(); // Parse URL params on mount and when searchParams change
+    parseUrlParams();
   }, [parseUrlParams]);
 
   // Update URL when filters change
@@ -162,7 +161,7 @@ export default function ProductFilter() {
     }
   }, [dispatch, categories?.length, categoriesLoading]);
 
-  // Fetch attributes from /all-attributes
+  // Fetch attributes
   useEffect(() => {
     const fetchAttributes = async () => {
       try {
@@ -225,7 +224,7 @@ export default function ProductFilter() {
     }
   }, [isClient, selectedCategoryIds, selectedAttributeValues, sortBy, page, categorySlug, minPrice, maxPrice]);
 
-  // Handle category selection (toggle)
+  // Handle category selection
   const handleCategorySelect = (id) => {
     setSelectedCategoryIds((prev) =>
       prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
@@ -233,7 +232,7 @@ export default function ProductFilter() {
     setPage(1);
   };
 
-  // Handle attribute value selection (toggle)
+  // Handle attribute value selection
   const handleAttributeSelect = (attrName, value) => {
     setSelectedAttributeValues((prev) => {
       const values = prev[attrName] || [];
@@ -291,6 +290,12 @@ export default function ProductFilter() {
     setCategorySlug("");
     setSortBy("latest");
     setPage(1);
+    setIsFilterOpen(false); // Close filter sidebar on clear
+  };
+
+  // Toggle filter sidebar
+  const toggleFilterSidebar = () => {
+    setIsFilterOpen((prev) => !prev);
   };
 
   // Check if any filters are active
@@ -315,232 +320,446 @@ export default function ProductFilter() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 p-6 mx-auto">
-      {/* Filter Sidebar */}
-      <div className="w-full md:w-1/5 md:sticky top-0 md:self-start bg-white p-6 rounded-lg shadow-md">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Filters</h2>
+    <div className="relative">
+      {/* Filter Button for Mobile */}
+      <div className="xl:hidden p-4">
+        <button
+          onClick={toggleFilterSidebar}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1m-17 4h16m-16 4h16m-16 4h16" />
+          </svg>
+          <span>Filters</span>
           {hasActiveFilters() && (
-            <button
-              onClick={clearAllFilters}
-              className="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded-md font-medium transition-colors"
-            >
-              Clear All
-            </button>
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+              {selectedCategoryIds.length +
+                Object.values(selectedAttributeValues).reduce((sum, vals) => sum + vals.length, 0) +
+                (minPrice || maxPrice ? 1 : 0) +
+                (categorySlug ? 1 : 0)}
+            </span>
           )}
-        </div>
+        </button>
+      </div>
 
-        {/* Active Filters Summary */}
-        {hasActiveFilters() && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-md">
-            <h4 className="text-sm font-semibold text-blue-800 mb-2">Active Filters:</h4>
-            <div className="flex flex-wrap gap-1">
-              {selectedCategoryIds.length > 0 && (
-                <>
-                  {selectedCategoryIds.map((categoryId) => {
-                    const findCategoryName = (cats, id) => {
-                      for (const cat of cats) {
-                        if (cat.id === id) return cat.name;
-                        if (cat.children) {
-                          const found = findCategoryName(cat.children, id);
-                          if (found) return found;
-                        }
-                      }
-                      return null;
-                    };
-                    const categoryName = findCategoryName(categories || [], categoryId);
-                    return (
-                      categoryName && (
-                        <span
-                          key={categoryId}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
-                        >
-                          {categoryName}
-                        </span>
-                      )
-                    );
-                  })}
-                </>
-              )}
-              {(minPrice || maxPrice) && (
-                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                  Price: ৳{minPrice || "0"} - ৳{maxPrice || "∞"}
-                </span>
-              )}
-              {Object.entries(selectedAttributeValues).map(([attrName, values]) =>
-                values.length > 0 &&
-                values.map((value) => (
-                  <span
-                    key={`${attrName}-${value}`}
-                    className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded"
+      <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 p-6 mx-auto">
+        {/* Filter Sidebar */}
+        <AnimatePresence>
+          {isFilterOpen && (
+            <motion.div
+              initial={{ x: "-100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "-100%", opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-y-0 left-0 w-4/5 max-w-sm bg-white p-6 shadow-lg z-50 xl:hidden overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Filters</h2>
+                <button
+                  onClick={toggleFilterSidebar}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex items-center justify-between mb-4">
+                {hasActiveFilters() && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded-md font-medium transition-colors"
                   >
-                    {attrName}: {value}
-                  </span>
-                ))
-              )}
-              {categorySlug && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
-                  Slug: {categorySlug}
-                </span>
-              )}
-              {sortBy !== "latest" && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                  Sort: {sortBy.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+                    Clear All
+                  </button>
+                )}
+              </div>
 
-        {/* Price Range Filter */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-md font-semibold">Price Range</h3>
-            {(minPrice || maxPrice) && (
+              {/* Active Filters Summary */}
+              {hasActiveFilters() && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-md">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2">Active Filters:</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedCategoryIds.length > 0 && (
+                      <>
+                        {selectedCategoryIds.map((categoryId) => {
+                          const findCategoryName = (cats, id) => {
+                            for (const cat of cats) {
+                              if (cat.id === id) return cat.name;
+                              if (cat.children) {
+                                const found = findCategoryName(cat.children, id);
+                                if (found) return found;
+                              }
+                            }
+                            return null;
+                          };
+                          const categoryName = findCategoryName(categories || [], categoryId);
+                          return (
+                            categoryName && (
+                              <span
+                                key={categoryId}
+                                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                              >
+                                {categoryName}
+                              </span>
+                            )
+                          );
+                        })}
+                      </>
+                    )}
+                    {(minPrice || maxPrice) && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                        Price: ৳{minPrice || "0"} - ৳{maxPrice || "∞"}
+                      </span>
+                    )}
+                    {Object.entries(selectedAttributeValues).map(([attrName, values]) =>
+                      values.length > 0 &&
+                      values.map((value) => (
+                        <span
+                          key={`${attrName}-${value}`}
+                          className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded"
+                        >
+                          {attrName}: {value}
+                        </span>
+                      ))
+                    )}
+                    {categorySlug && (
+                      <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
+                        Slug: {categorySlug}
+                      </span>
+                    )}
+                    {sortBy !== "latest" && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                        Sort: {sortBy.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Price Range Filter */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-md font-semibold">Price Range</h3>
+                  {(minPrice || maxPrice) && (
+                    <button
+                      onClick={clearPriceFilters}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">Min Price (৳)</label>
+                    <input
+                      type="number"
+                      value={minPrice}
+                      onChange={handleMinPriceChange}
+                      placeholder="0"
+                      min="0"
+                      className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">Max Price (৳)</label>
+                    <input
+                      type="number"
+                      value={maxPrice}
+                      onChange={handleMaxPriceChange}
+                      placeholder="∞"
+                      min="0"
+                      className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+                    />
+                  </div>
+                </div>
+                {minPrice && maxPrice && (
+                  <div className="mt-2 text-xs text-gray-600">
+                    Range: ৳{minPrice} - ৳{maxPrice}
+                  </div>
+                )}
+              </div>
+
+              {/* Categories */}
+              <div className="mb-6">
+                <h3 className="text-md font-semibold mb-2">Categories</h3>
+                {categories?.length > 0 ? (
+                  <CategoryAccordion
+                    categories={categories}
+                    selectedIds={selectedCategoryIds}
+                    onSelect={handleCategorySelect}
+                  />
+                ) : (
+                  <div className="text-sm text-gray-500">No categories available</div>
+                )}
+              </div>
+
+              {/* Attributes */}
+              {attributes.map((attr) => (
+                <div key={attr.id} className="mb-6">
+                  <h3 className="text-md font-semibold mb-2">{attr.name}</h3>
+                  <ul className="space-y-2">
+                    {attr.values.map((val) => (
+                      <li key={val.id}>
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={(selectedAttributeValues[attr.name] || []).includes(val.value)}
+                            onChange={() => handleAttributeSelect(attr.name, val.value)}
+                            className="form-checkbox h-5 w-5 text-blue-600"
+                          />
+                          <span className="text-gray-700">{val.value}</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Overlay for mobile sidebar */}
+        <AnimatePresence>
+          {isFilterOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-black xl:hidden z-40 !m-0"
+              onClick={toggleFilterSidebar}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Desktop Filter Sidebar */}
+        <div className="hidden xl:block w-full xl:w-1/5 xl:sticky top-0 xl:self-start bg-white p-6 rounded-lg shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Filters</h2>
+            {hasActiveFilters() && (
               <button
-                onClick={clearPriceFilters}
-                className="text-xs text-blue-600 hover:text-blue-800"
+                onClick={clearAllFilters}
+                className="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded-md font-medium transition-colors"
               >
-                Clear
+                Clear All
               </button>
             )}
           </div>
-          <div className="flex space-x-2">
-            <div className="flex-1">
-              <label className="block text-xs text-gray-600 mb-1">Min Price (৳)</label>
-              <input
-                type="number"
-                value={minPrice}
-                onChange={handleMinPriceChange}
-                placeholder="0"
-                min="0"
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs text-gray-600 mb-1">Max Price (৳)</label>
-              <input
-                type="number"
-                value={maxPrice}
-                onChange={handleMaxPriceChange}
-                placeholder="∞"
-                min="0"
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-              />
-            </div>
-          </div>
-          {minPrice && maxPrice && (
-            <div className="mt-2 text-xs text-gray-600">
-              Range: ৳{minPrice} - ৳{maxPrice}
+
+          {/* Active Filters Summary */}
+          {hasActiveFilters() && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-md">
+              <h4 className="text-sm font-semibold text-blue-800 mb-2">Active Filters:</h4>
+              <div className="flex flex-wrap gap-1">
+                {selectedCategoryIds.length > 0 && (
+                  <>
+                    {selectedCategoryIds.map((categoryId) => {
+                      const findCategoryName = (cats, id) => {
+                        for (const cat of cats) {
+                          if (cat.id === id) return cat.name;
+                          if (cat.children) {
+                            const found = findCategoryName(cat.children, id);
+                            if (found) return found;
+                          }
+                        }
+                        return null;
+                      };
+                      const categoryName = findCategoryName(categories || [], categoryId);
+                      return (
+                        categoryName && (
+                          <span
+                            key={categoryId}
+                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                          >
+                            {categoryName}
+                          </span>
+                        )
+                      );
+                    })}
+                  </>
+                )}
+                {(minPrice || maxPrice) && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                    Price: ৳{minPrice || "0"} - ৳{maxPrice || "∞"}
+                  </span>
+                )}
+                {Object.entries(selectedAttributeValues).map(([attrName, values]) =>
+                  values.length > 0 &&
+                  values.map((value) => (
+                    <span
+                      key={`${attrName}-${value}`}
+                      className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded"
+                    >
+                      {attrName}: {value}
+                    </span>
+                  ))
+                )}
+                {categorySlug && (
+                  <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
+                    Slug: {categorySlug}
+                  </span>
+                )}
+                {sortBy !== "latest" && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                    Sort: {sortBy.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </span>
+                )}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Categories */}
-        <div className="mb-6">
-          <h3 className="text-md font-semibold mb-2">Categories</h3>
-          {categories?.length > 0 ? (
-            <CategoryAccordion
-              categories={categories}
-              selectedIds={selectedCategoryIds}
-              onSelect={handleCategorySelect}
-            />
-          ) : (
-            <div className="text-sm text-gray-500">No categories available</div>
-          )}
-        </div>
-
-        {/* Attributes */}
-        {attributes.map((attr) => (
-          <div key={attr.id} className="mb-6">
-            <h3 className="text-md font-semibold mb-2">{attr.name}</h3>
-            <ul className="space-y-2">
-              {attr.values.map((val) => (
-                <li key={val.id}>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={(selectedAttributeValues[attr.name] || []).includes(val.value)}
-                      onChange={() => handleAttributeSelect(attr.name, val.value)}
-                      className="form-checkbox h-5 w-5 text-blue-600"
-                    />
-                    <span className="text-gray-700">{val.value}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-
-      {/* Products Grid */}
-      <div className="w-full md:w-4/5">
-        <div className="mb-6 px-4 py-2 flex justify-between items-center border border-gray-200">
-          <div className="text-sm text-gray-600">
-            Showing {products.length} of {pagination.total} products
-          </div>
-          <div className="short-by">
-            <select
-              value={sortBy}
-              onChange={handleSortChange}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
-              <option value="latest">Latest</option>
-              <option value="price_low_to_high">Price: Low to High</option>
-              <option value="price_high_to_low">Price: High to Low</option>
-            </select>
-          </div>
-        </div>
-
-        {loadingProducts ? (
-          <div className="text-center p-4">Loading products...</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {products.map((product) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.3 }}
+          {/* Price Range Filter */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-md font-semibold">Price Range</h3>
+              {(minPrice || maxPrice) && (
+                <button
+                  onClick={clearPriceFilters}
+                  className="text-xs text-blue-600 hover:text-blue-800"
                 >
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              <div className="flex-1">
+                <label className="block text-xs text-gray-600 mb-1">Min Price (৳)</label>
+                <input
+                  type="number"
+                  value={minPrice}
+                  onChange={handleMinPriceChange}
+                  placeholder="0"
+                  min="0"
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs text-gray-600 mb-1">Max Price (৳)</label>
+                <input
+                  type="number"
+                  value={maxPrice}
+                  onChange={handleMaxPriceChange}
+                  placeholder="∞"
+                  min="0"
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+                />
+              </div>
+            </div>
+            {minPrice && maxPrice && (
+              <div className="mt-2 text-xs text-gray-600">
+                Range: ৳{minPrice} - ৳{maxPrice}
+              </div>
+            )}
           </div>
-        )}
 
-        {products.length === 0 && !loadingProducts && (
-          <div className="text-center p-8 text-gray-500">
-            <p>No products found matching your filters.</p>
-            <p className="text-sm mt-2">Try adjusting your search criteria.</p>
+          {/* Categories */}
+          <div className="mb-6">
+            <h3 className="text-md font-semibold mb-2">Categories</h3>
+            {categories?.length > 0 ? (
+              <CategoryAccordion
+                categories={categories}
+                selectedIds={selectedCategoryIds}
+                onSelect={handleCategorySelect}
+              />
+            ) : (
+              <div className="text-sm text-gray-500">No categories available</div>
+            )}
           </div>
-        )}
 
-        {/* Pagination */}
-        {pagination.last_page > 1 && (
-          <div className="flex justify-center mt-6 space-x-4">
-            <button
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 1}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300"
-            >
-              Previous
-            </button>
-            <span className="px-4 py-2 text-gray-700">
-              Page {pagination.current_page} of {pagination.last_page}
-            </span>
-            <button
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page === pagination.last_page}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300"
-            >
-              Next
-            </button>
+          {/* Attributes */}
+          {attributes.map((attr) => (
+            <div key={attr.id} className="mb-6">
+              <h3 className="text-md font-semibold mb-2">{attr.name}</h3>
+              <ul className="space-y-2">
+                {attr.values.map((val) => (
+                  <li key={val.id}>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={(selectedAttributeValues[attr.name] || []).includes(val.value)}
+                        onChange={() => handleAttributeSelect(attr.name, val.value)}
+                        className="form-checkbox h-5 w-5 text-blue-600"
+                      />
+                      <span className="text-gray-700">{val.value}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Products Grid */}
+        <div className="w-full xl:w-4/5">
+          <div className="mb-6 px-4 py-2 flex justify-between items-center border border-gray-200">
+            <div className="text-sm text-gray-600">
+              Showing {products.length} of {pagination.total} products
+            </div>
+            <div className="short-by">
+              <select
+                value={sortBy}
+                onChange={handleSortChange}
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
+              >
+                <option value="latest">Latest</option>
+                <option value="price_low_to_high">Price: Low to High</option>
+                <option value="price_high_to_low">Price: High to Low</option>
+              </select>
+            </div>
           </div>
-        )}
+
+          {loadingProducts ? (
+            <div className="text-center p-4">Loading products...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence>
+                {products.map((product) => (
+                  <motion.div
+                    key={product?.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {products.length === 0 && !loadingProducts && (
+            <div className="text-center p-8 text-gray-500">
+              <p>No products found matching your filters.</p>
+              <p className="text-sm mt-2">Try adjusting your search criteria.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.last_page > 1 && (
+            <div className="flex justify-center mt-6 space-x-4">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-gray-700">
+                Page {pagination.current_page} of {pagination.last_page}
+              </span>
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === pagination.last_page}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

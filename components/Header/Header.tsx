@@ -51,9 +51,9 @@ interface RootState {
 }
 
 // Mobile Menu Item Component
-const MobileMenuItem: React.FC<{ category: Category; onClose: () => void }> = ({ 
-  category, 
-  onClose 
+const MobileMenuItem: React.FC<{ category: Category; onClose: () => void }> = ({
+  category,
+  onClose,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = category.children && category.children.length > 0;
@@ -79,15 +79,15 @@ const MobileMenuItem: React.FC<{ category: Category; onClose: () => void }> = ({
             onClick={toggleOpen}
             className="p-3 text-gray-600 hover:text-gray-800"
           >
-            <ChevronRight 
+            <ChevronRight
               className={`w-4 h-4 transition-transform duration-200 ${
-                isOpen ? 'rotate-90' : ''
+                isOpen ? "rotate-90" : ""
               }`}
             />
           </button>
         )}
       </div>
-      
+
       <AnimatePresence>
         {isOpen && hasChildren && (
           <motion.div
@@ -132,7 +132,7 @@ const MobileSidebar: React.FC<{
             className="fixed inset-0 bg-black/50 backdrop-blur-md z-40"
             onClick={onClose}
           />
-          
+
           {/* Sidebar */}
           <motion.div
             initial={{ x: "-100%" }}
@@ -173,7 +173,7 @@ const MobileSidebar: React.FC<{
                   Home
                 </Link>
               </div>
-              
+
               {categories.map((category) => (
                 <MobileMenuItem
                   key={category.id}
@@ -181,7 +181,7 @@ const MobileSidebar: React.FC<{
                   onClose={onClose}
                 />
               ))}
-              
+
               <div className="px-4 py-3 border-b border-gray-200">
                 <Link
                   href="/products"
@@ -245,8 +245,8 @@ const MegaMenu: React.FC<{
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }> = ({ category, isVisible, onMouseEnter, onMouseLeave }) => {
-  const hasThirdLevel = category.children?.some(child => 
-    child.children && child.children.length > 0
+  const hasThirdLevel = category.children?.some(
+    (child) => child.children && child.children.length > 0
   );
 
   if (!hasThirdLevel) return null;
@@ -260,8 +260,8 @@ const MegaMenu: React.FC<{
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.2 }}
           className="fixed top-[calc(100%)] left-0 w-full bg-white shadow-lg border-t border-gray-200 z-30"
-          style={{ 
-            top: 'var(--header-height, 110px)', // Adjust based on your header height
+          style={{
+            top: "var(--header-height, 110px)", // Adjust based on your header height
           }}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
@@ -276,7 +276,7 @@ const MegaMenu: React.FC<{
                   >
                     {subCategory.name}
                   </Link>
-                  
+
                   {subCategory.children && subCategory.children.length > 0 && (
                     <ul className="space-y-2">
                       {subCategory.children.map((thirdLevel) => (
@@ -306,8 +306,8 @@ const DesktopMenuItem: React.FC<{ category: Category }> = ({ category }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
   const hasChildren = category.children && category.children.length > 0;
-  const hasThirdLevel = category.children?.some(child => 
-    child.children && child.children.length > 0
+  const hasThirdLevel = category.children?.some(
+    (child) => child.children && child.children.length > 0
   );
 
   const handleMouseEnter = () => {
@@ -354,7 +354,7 @@ const DesktopMenuItem: React.FC<{ category: Category }> = ({ category }) => {
   }, [hideTimeout]);
 
   return (
-    <li 
+    <li
       className="relative group"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -432,13 +432,14 @@ const Header: React.FC = () => {
   // Close mobile menu when screen size changes to desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1280) { // xl breakpoint
+      if (window.innerWidth >= 1280) {
+        // xl breakpoint
         setIsMobileMenuOpen(false);
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Loading state with skeleton
@@ -536,11 +537,14 @@ const Header: React.FC = () => {
                       Home
                     </Link>
                   </li>
-                  {categories && categories.length > 0 ? (
-                    categories.map((category: Category) => (
-                      <DesktopMenuItem key={category.id} category={category} />
-                    ))
-                  ) : null}
+                  {categories && categories.length > 0
+                    ? categories.map((category: Category) => (
+                        <DesktopMenuItem
+                          key={category.id}
+                          category={category}
+                        />
+                      ))
+                    : null}
                   <li>
                     <Link
                       href="/products"
@@ -590,7 +594,36 @@ const Header: React.FC = () => {
               onClick={handleToggleMobileMenu}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <Menu className="w-6 h-6" />
+              <svg
+                data-v-44281fb5=""
+                data-v-68fa2a2f=""
+                xmlns="http://www.w3.org/2000/svg"
+                width="30"
+                height="16"
+                viewBox="0 0 30 16"
+                fill="currentColor"
+              >
+                <rect
+                  data-v-44281fb5=""
+                  data-v-68fa2a2f=""
+                  width="30"
+                  height="1.5"
+                ></rect>
+                <rect
+                  data-v-44281fb5=""
+                  data-v-68fa2a2f=""
+                  y="7"
+                  width="20"
+                  height="1.5"
+                ></rect>
+                <rect
+                  data-v-44281fb5=""
+                  data-v-68fa2a2f=""
+                  y="14"
+                  width="30"
+                  height="1.5"
+                ></rect>
+              </svg>
             </button>
 
             {/* Mobile Logo */}
@@ -615,7 +648,9 @@ const Header: React.FC = () => {
                 suppressHydrationWarning
                 className="flex cursor-pointer gap-2 items-center p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition-all duration-200"
               >
-                <span><Search /></span>
+                <span>
+                  <Search />
+                </span>
               </button>
               {/* Cart */}
               <Link href="/cart" className="block">
