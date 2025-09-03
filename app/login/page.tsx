@@ -1,18 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { userLogin, fetchUser } from '@/store/slices/authSlice'; // Adjust path if needed
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { userLogin, fetchUser } from "@/store/slices/authSlice"; // Adjust path if needed
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import Link from "next/link";
 
 export default function Login() {
   const dispatch = useDispatch();
   const router = useRouter();
   const { loading, error } = useSelector((state: any) => state.auth);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [mounted, setMounted] = useState(false); // Track client mount
 
   // Only render on client to avoid hydration mismatch
@@ -25,10 +26,12 @@ export default function Login() {
     if (!mounted) return;
 
     const removeAttributes = () => {
-      const elements = document.querySelectorAll('[jf-ext-cache-id], [jf-ext-button-ct]');
+      const elements = document.querySelectorAll(
+        "[jf-ext-cache-id], [jf-ext-button-ct]"
+      );
       elements.forEach((el) => {
-        el.removeAttribute('jf-ext-cache-id');
-        el.removeAttribute('jf-ext-button-ct');
+        el.removeAttribute("jf-ext-cache-id");
+        el.removeAttribute("jf-ext-button-ct");
       });
     };
 
@@ -45,10 +48,10 @@ export default function Login() {
     try {
       // Dispatch login action
       await dispatch(userLogin({ email, password })).unwrap();
-      //router.push('/dashboard');
+      router.push('/dashboard');
     } catch (err: any) {
-      console.error('Login failed:', err);
-      toast.error(err.message || 'Login failed');
+      console.error("Login failed:", err);
+      toast.error(err.message || "Login failed");
     }
   };
 
@@ -87,11 +90,25 @@ export default function Login() {
           type="submit"
           disabled={loading}
           className={`w-full p-3 text-white rounded-lg font-semibold ${
-            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? "Logging in..." : "Login"}
         </button>
+
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
+              className="text-blue-600 hover:text-blue-500"
+            >
+              Register here
+            </Link>
+          </p>
+        </div>
       </form>
     </div>
   );

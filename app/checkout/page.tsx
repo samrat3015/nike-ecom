@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { fetchSettings } from "@/store/slices/settingsSlice";
 import CouponSidebar from "@/components/Coupon/CouponSidebar";
 import AppliedCoupon from "@/components/Coupon/AppliedCoupon";
+import { getSessionId } from "@/utils/session";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -18,6 +19,8 @@ export default function Checkout() {
   const { settings, loading: settingsLoading, error: settingsError } = useSelector((state) => state.settings ?? {});
   const [isCouponSidebarOpen, setIsCouponSidebarOpen] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
+
+  const { user } = useSelector((state: any) => state.auth || {});
 
   // Form state
   const [customerName, setCustomerName] = useState("");
@@ -43,6 +46,15 @@ export default function Checkout() {
   const totalDiscount = appliedCoupon?.applied[0]?.summary?.total_discount || 0;
   const total = subtotal + shippingCost - totalDiscount;
 
+  // Helper function to get the appropriate identifier
+  const getOrderIdentifier = () => {
+    if (user && user.id) {
+      return { user_id: user.id };
+    } else {
+      return { session_id: getSessionId() };
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -54,6 +66,7 @@ export default function Checkout() {
       shipping_cost: shippingCost,
       area: area,
       payment_method: paymentMethod,
+      ...getOrderIdentifier(),
       items: cartItems.map(item => {
         const couponItem = appliedCoupon?.applied[0]?.items.find(cartItem => cartItem.cart_item_id === item.id);
         return {

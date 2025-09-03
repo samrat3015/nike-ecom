@@ -6,11 +6,12 @@ import { fetchCategories } from "@/store/slices/categoriesSlice";
 import MenuItem from "./MenuItem";
 import { fetchSettings } from "@/store/slices/settingsSlice";
 import { fetchCart } from "@/store/slices/cartSlice";
+import { initializeAuth } from "@/store/slices/authSlice"; // Import initializeAuth
 import Link from "next/link";
 import CartIcon from "../Icons/CartIcon";
 import SearchModel from "./SearchModel";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronDown, ChevronRight, X, Menu } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, X, UserIcon,  } from "lucide-react";
 
 // TypeScript interfaces for better type safety
 interface Category {
@@ -47,6 +48,12 @@ interface RootState {
   };
   cart: {
     items_count: number;
+  };
+  auth: {
+    isAuthenticated: boolean;
+    initialized: boolean;
+    loading: boolean;
+    user: any;
   };
 }
 
@@ -261,7 +268,7 @@ const MegaMenu: React.FC<{
           transition={{ duration: 0.2 }}
           className="fixed top-[calc(100%)] left-0 w-full bg-white shadow-lg border-t border-gray-200 z-30"
           style={{
-            top: "var(--header-height, 110px)", // Adjust based on your header height
+            top: "var(--header-height, 105px)", // Adjust based on your header height
           }}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
@@ -404,6 +411,14 @@ const Header: React.FC = () => {
     error: categoriesError = null,
   } = useSelector((state: RootState) => state.categories ?? {});
 
+  // Updated auth selector with proper typing
+  const {
+    isAuthenticated = false,
+    initialized = false,
+    loading: authLoading = false,
+    user = null,
+  } = useSelector((state: RootState) => state.auth ?? {});
+
   const {
     settings = {},
     media = {},
@@ -415,11 +430,22 @@ const Header: React.FC = () => {
     (state: RootState) => state.cart ?? {}
   );
 
+  // Initialize auth and fetch other data
   useEffect(() => {
+    // Initialize auth first
+    if (!initialized) {
+      dispatch(initializeAuth() as any);
+    }
+    
+    // Fetch other data
     dispatch(fetchCategories() as any);
     dispatch(fetchSettings() as any);
-    dispatch(fetchCart() as any);
-  }, [dispatch]);
+    
+    // Only fetch cart if authenticated (this will be handled by the auth actions too)
+    if (isAuthenticated) {
+      dispatch(fetchCart() as any);
+    }
+  }, [dispatch, initialized, isAuthenticated]);
 
   const [isOpenSearch, setIsOpenSearch] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -442,8 +468,8 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Loading state with skeleton
-  if (categoriesLoading || settingsLoading) {
+  // Show loading state while initializing auth or loading other data
+  if (!initialized || authLoading || categoriesLoading || settingsLoading) {
     return (
       <div className="header_area relative z-10">
         <div className="header_top bg-black py-2">
@@ -492,15 +518,38 @@ const Header: React.FC = () => {
         <div className="container">
           <div className="flex justify-between text-white">
             <div className="top_notice">
-              <p className="text-sm">{settings?.top_notice}</p>
+              <p className="text-[12px] sm:text-sm">{settings?.top_notice}</p>
             </div>
-            <div className="top_login">
-              <Link
-                href="/login"
-                className="hover:underline text-white text-sm transition-all duration-200"
-              >
-                Login
-              </Link>
+            <div className="top_login hidden lg:block">
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  {user?.name && (
+                    <span className="text-sm hidden md:block">Welcome, {user.name}</span>
+                  )}
+                  <Link
+                    href="/dashboard"
+                    className="hover:underline text-white text-sm transition-all duration-200"
+                  >
+                    Dashboard
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="hover:underline text-white text-sm transition-all duration-200"
+                  >
+                    Login
+                  </Link>
+                  <span className="text-white text-sm"> | </span>
+                  <Link
+                    href="/register"
+                    className="hover:underline text-white text-sm transition-all duration-200"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -652,6 +701,19 @@ const Header: React.FC = () => {
                   <Search />
                 </span>
               </button>
+
+              <div className="lg:hidden">
+                <Link 
+                  href={isAuthenticated ? "/dashboard" : "/login"} 
+                  className="block"
+                >
+                  <div className="relative hover:bg-gray-100 w-[40px] h-[40px] transition-all duration-200 rounded-full flex justify-center items-center group">
+                    <UserIcon />
+                  </div>
+                </Link>
+              </div>
+
+
               {/* Cart */}
               <Link href="/cart" className="block">
                 <div className="relative hover:bg-gray-100 w-[40px] h-[40px] transition-all duration-200 rounded-full flex justify-center items-center group">

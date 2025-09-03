@@ -8,6 +8,7 @@ import Providers from "./Providers";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Footer from "@/components/Footer/Footer";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({
         <Providers>
           <Header />
           {children}
+          <Footer />
         </Providers>
         <ToastContainer position="top-right" autoClose={1000} />
       </body>
