@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
 // Import Swiper modules
 import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
+import SliderPreloader from "@/components/Skeletons/SliderPreloader";
 
 // Import Swiper styles
 import 'swiper/css';
@@ -29,7 +30,7 @@ const Slider = () => {
   return (
     <div>
       <section>
-        {sliderLoading && "" }
+        {sliderLoading && <SliderPreloader />}
         {sliderError && ""}
 
         {slider && slider.length > 0 ? (

@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "@/store/slices/productsSlice";
 import ProductCard from "./ProductCard";
+import ProductCardSkeleton from "@/components/Skeletons/ProductCardSkeleton"; // Import the skeleton component
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Scrollbar } from "swiper/modules";
 import "swiper/css";
@@ -22,14 +23,49 @@ const Products = () => {
   return (
     <div className="container py-8 mx-auto">
       {loading ? (
-        ""
+        <div>
+          {/* Render skeleton for each category */}
+          {["Category 1", "Category 2"].map((categoryKey) => (
+            <div key={categoryKey} className="mb-12">
+              <div className="flex justify-between items-center mb-4">
+                <div className="h-6 bg-gray-200 rounded w-1/4 animate-pulse" />
+                <div className="flex items-center space-x-4">
+                  <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+                  <div className="flex space-x-2">
+                    <div className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+                    <div className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                </div>
+              </div>
+              <Swiper
+                modules={[Navigation, Scrollbar]}
+                spaceBetween={24}
+                slidesPerView={1}
+                breakpoints={{
+                  0: { slidesPerView: 2 },
+                  768: { slidesPerView: 2 },
+                  1024: { slidesPerView: 3 },
+                }}
+                navigation={{
+                  prevEl: `.swiper-button-prev-${categoryKey.replace(/\s/g, "-")}`,
+                  nextEl: `.swiper-button-next-${categoryKey.replace(/\s/g, "-")}`,
+                }}
+                className="mySwiper"
+              >
+                {/* Render 3 skeleton cards to match slidesPerView */}
+                {[...Array(3)].map((_, index) => (
+                  <SwiperSlide key={index} className="product_line_item">
+                    <ProductCardSkeleton />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          ))}
+        </div>
       ) : error ? (
-        ""
+        <div className="text-red-500 text-center">Error: {error}</div>
       ) : (
         <div>
-          {/* Debug */}
-          {/* <pre>{JSON.stringify(products, null, 2)}</pre> */}
-
           {Object.keys(products).map((categoryKey) => {
             const firstProduct = products[categoryKey][0];
             const categorySlug = firstProduct?.category?.slug;
@@ -37,7 +73,7 @@ const Products = () => {
             return (
               <div key={categoryKey} className="mb-12">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="md:text-xl text-base  font-semibold">{categoryKey}</h2>
+                  <h2 className="md:text-xl text-base font-semibold">{categoryKey}</h2>
                   <div className="flex items-center space-x-4">
                     {categorySlug && (
                       <Link
@@ -90,7 +126,6 @@ const Products = () => {
                   </div>
                 </div>
 
-                {/* Swiper container */}
                 <div className="group">
                   <Swiper
                     modules={[Navigation, Scrollbar]}

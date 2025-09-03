@@ -6,7 +6,7 @@ const ProductCard = ({ product }) => {
     return (
         <div className="card bg-base-100">
             <div className="card-image relative aspect-square overflow-hidden">
-                <Link href={`/product/${product.slug}`}><img src={product.feature_image} alt="" className="w-full h-full object-cover" /></Link>
+                <Link href={`/product/${product.slug}`}><img loading="lazy" src={product.feature_image} alt="" className="w-full h-full object-cover" /></Link>
             </div>
             <div className="card-body pt-3">
                 <Link href={`/product/${product.slug}`}><h2 className="card-title font-semibold text-sm md:text-base">{product.name}</h2></Link>

@@ -9,7 +9,7 @@ import { fetchCategories } from "@/store/slices/categoriesSlice";
 import ProductCard from "@/components/Product/ProductCard";
 import { useRouter, useSearchParams } from "next/navigation";
 
-// Accordion-style category component (unchanged)
+// Accordion-style category component
 const CategoryAccordion = ({ categories, selectedIds, onSelect }) => {
   const [openCategories, setOpenCategories] = useState({});
 
@@ -71,6 +71,32 @@ const CategoryAccordion = ({ categories, selectedIds, onSelect }) => {
   );
 };
 
+// Helper function to find category by slug
+const findCategoryBySlug = (categories, slug) => {
+  for (const category of categories) {
+    if (category.slug === slug) {
+      return category;
+    }
+    if (category.children && category.children.length > 0) {
+      const found = findCategoryBySlug(category.children, slug);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// Helper function to find category name by ID
+const findCategoryName = (categories, id) => {
+  for (const cat of categories) {
+    if (cat.id === id) return cat.name;
+    if (cat.children) {
+      const found = findCategoryName(cat.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 // Main ProductFilter component
 export default function ProductFilter() {
   const dispatch = useDispatch();
@@ -93,7 +119,7 @@ export default function ProductFilter() {
   const [isClient, setIsClient] = useState(false);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // State for mobile filter sidebar
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Parse URL parameters and update state
   const parseUrlParams = useCallback(() => {
@@ -125,6 +151,16 @@ export default function ProductFilter() {
     setSelectedAttributeValues(attributeParams);
   }, [searchParams]);
 
+  // Handle category slug to ID conversion
+  useEffect(() => {
+    if (isClient && categorySlug && categories && categories.length > 0) {
+      const category = findCategoryBySlug(categories, categorySlug);
+      if (category && !selectedCategoryIds.includes(category.id)) {
+        setSelectedCategoryIds(prev => [...prev, category.id]);
+      }
+    }
+  }, [isClient, categorySlug, categories, selectedCategoryIds]);
+
   // Handle client-side mounting and URL changes
   useEffect(() => {
     setIsClient(true);
@@ -137,7 +173,11 @@ export default function ProductFilter() {
 
     const params = new URLSearchParams();
 
-    if (categorySlug) params.append("category_slug", categorySlug);
+    // Don't include category_slug in URL if it's already converted to category_ids
+    if (categorySlug && selectedCategoryIds.length === 0) {
+      params.append("category_slug", categorySlug);
+    }
+    
     selectedCategoryIds.forEach((id) => params.append("category_ids[]", id));
     if (minPrice) params.append("min_price", minPrice);
     if (maxPrice) params.append("max_price", maxPrice);
@@ -153,6 +193,11 @@ export default function ProductFilter() {
     const newURL = `/products?${params.toString()}`;
     router.push(newURL, { scroll: false });
   }, [isClient, categorySlug, selectedCategoryIds, minPrice, maxPrice, sortBy, page, selectedAttributeValues, router]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    updateURL();
+  }, [selectedCategoryIds, selectedAttributeValues, sortBy, page, minPrice, maxPrice]);
 
   // Fetch categories if not loaded
   useEffect(() => {
@@ -180,7 +225,12 @@ export default function ProductFilter() {
     setLoadingProducts(true);
     try {
       const params = new URLSearchParams();
-      if (categorySlug) params.append("category_slug", categorySlug);
+      
+      // Use category_slug if no specific category IDs are selected
+      if (categorySlug && selectedCategoryIds.length === 0) {
+        params.append("category_slug", categorySlug);
+      }
+      
       selectedCategoryIds.forEach((id) => params.append("category_ids[]", id));
       params.append("sort_by", sortBy);
       params.append("page", page);
@@ -217,7 +267,7 @@ export default function ProductFilter() {
     }
   };
 
-  // Fetch products when filters or URL params change
+  // Fetch products when filters change
   useEffect(() => {
     if (isClient) {
       fetchProducts();
@@ -226,9 +276,16 @@ export default function ProductFilter() {
 
   // Handle category selection
   const handleCategorySelect = (id) => {
-    setSelectedCategoryIds((prev) =>
-      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
-    );
+    setSelectedCategoryIds((prev) => {
+      const newIds = prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id];
+      
+      // Clear category slug if user manually selects categories
+      if (newIds.length > 0) {
+        setCategorySlug("");
+      }
+      
+      return newIds;
+    });
     setPage(1);
   };
 
@@ -255,12 +312,6 @@ export default function ProductFilter() {
     if (newPage >= 1 && newPage <= pagination.last_page) {
       setPage(newPage);
     }
-  };
-
-  // Handle category slug change
-  const handleSlugChange = (e) => {
-    setCategorySlug(e.target.value);
-    setPage(1);
   };
 
   // Handle price filter changes
@@ -290,7 +341,7 @@ export default function ProductFilter() {
     setCategorySlug("");
     setSortBy("latest");
     setPage(1);
-    setIsFilterOpen(false); // Close filter sidebar on clear
+    setIsFilterOpen(false);
   };
 
   // Toggle filter sidebar
@@ -383,16 +434,6 @@ export default function ProductFilter() {
                     {selectedCategoryIds.length > 0 && (
                       <>
                         {selectedCategoryIds.map((categoryId) => {
-                          const findCategoryName = (cats, id) => {
-                            for (const cat of cats) {
-                              if (cat.id === id) return cat.name;
-                              if (cat.children) {
-                                const found = findCategoryName(cat.children, id);
-                                if (found) return found;
-                              }
-                            }
-                            return null;
-                          };
                           const categoryName = findCategoryName(categories || [], categoryId);
                           return (
                             categoryName && (
@@ -425,7 +466,7 @@ export default function ProductFilter() {
                     )}
                     {categorySlug && (
                       <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
-                        Slug: {categorySlug}
+                        Category: {categorySlug}
                       </span>
                     )}
                     {sortBy !== "latest" && (
@@ -556,16 +597,6 @@ export default function ProductFilter() {
                 {selectedCategoryIds.length > 0 && (
                   <>
                     {selectedCategoryIds.map((categoryId) => {
-                      const findCategoryName = (cats, id) => {
-                        for (const cat of cats) {
-                          if (cat.id === id) return cat.name;
-                          if (cat.children) {
-                            const found = findCategoryName(cat.children, id);
-                            if (found) return found;
-                          }
-                        }
-                        return null;
-                      };
                       const categoryName = findCategoryName(categories || [], categoryId);
                       return (
                         categoryName && (
@@ -598,7 +629,7 @@ export default function ProductFilter() {
                 )}
                 {categorySlug && (
                   <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
-                    Slug: {categorySlug}
+                    Category: {categorySlug}
                   </span>
                 )}
                 {sortBy !== "latest" && (
@@ -711,7 +742,9 @@ export default function ProductFilter() {
           </div>
 
           {loadingProducts ? (
-            <div className="text-center p-4">Loading products...</div>
+            <div className="text-center flex justify-center items-center h-[50vh]">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"></div>
+            </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <AnimatePresence>
