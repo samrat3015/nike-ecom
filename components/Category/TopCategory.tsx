@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -10,13 +10,23 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 const TopCategory = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const {
     items: categories = [],
     loading: categoriesLoading = false,
     error: categoriesError = null,
   } = useSelector((state) => state.categories ?? {});
 
-  // Filter only parent categories (parent_id is null)
+  if (!mounted) {
+    // Prevent hydration mismatch
+    return null;
+  }
+
   const parentCategories = categories.filter((category) => category.parent_id === null);
 
   return (
@@ -50,7 +60,7 @@ const TopCategory = () => {
                     alt={category.name}
                     className="w-full aspect-square object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = "/fallback-image.jpg"; // Fallback image
+                      e.currentTarget.src = "/fallback-image.jpg";
                     }}
                   />
                 ) : (

@@ -38,6 +38,7 @@ const settingsSlice = createSlice({
     sliderLoading: false,
     sliderError: null,
     media: {},
+    facebook_pixel_info: {},
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -51,6 +52,7 @@ const settingsSlice = createSlice({
         state.settingsLoading = false;
         state.settings = action.payload.generalSettings || {};
         state.media = action.payload.media || {};
+        state.facebook_pixel_info = action.payload.facebook_pixel_info || {};
       })
       .addCase(fetchSettings.rejected, (state, action) => {
         state.settingsLoading = false;

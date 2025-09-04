@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { Heart, Star, ShoppingCart, Minus, Plus, Share2, Truck, ShieldCheck } from 'lucide-react';
 import { addToCart } from "@/store/slices/cartSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, notFound } from "next/navigation";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
 import 'swiper/css';
@@ -12,6 +12,9 @@ import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 import 'swiper/css/free-mode';
 import { motion, AnimatePresence } from "framer-motion";
+import { useFbPixel } from "@/hooks/useFbPixel";
+import { v4 as uuidv4 } from "uuid";
+import { u } from "motion/react-client";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -84,6 +87,8 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   const dispatch = useDispatch();
   const router = useRouter();
 
+  const { trackAddToCart, trackViewContent } = useFbPixel();
+
   // Swiper states
   const [mainSwiper, setMainSwiper] = useState<any>(null);
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
@@ -96,11 +101,19 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
     const fetchProduct = async () => {
       try {
         const productData = await getProduct(params.slug);
+
+        // Check if productData is valid
+        if (!productData || Object.keys(productData).length === 0) {
+          notFound(); // Trigger Next.js 404 page
+          return;
+        }
+
+
         setProduct(productData);
 
         // Initialize selected attributes for variable products
-        if (productData.variations.length > 0) {
-          const attributeGroups = getAttributeGroups(productData.variations);
+        if (productData?.variations.length > 0) {
+          const attributeGroups = getAttributeGroups(productData?.variations);
           const initialAttributes: { [key: string]: AttributeValue | null } = {};
           Object.keys(attributeGroups).forEach((attrName) => {
             const firstAvailable = attributeGroups[attrName].find((item) => item.stock > 0);
@@ -134,6 +147,14 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
 
     fetchProduct();
   }, [params.slug, mainSwiper]);
+
+
+  useEffect(() => {
+    if (product) {
+      const eventID = uuidv4();
+      trackViewContent(product, eventID, currentPrice);
+    }
+  }, [product]);
 
   // Group attributes by name for variable products
   const getAttributeGroups = (variations: Variation[]) => {
@@ -195,15 +216,23 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
 
   const handleAddToCart = async () => {
+    const eventID = uuidv4();
     const payload = {
       product_id: product!.id,
       quantity,
       product_variation_id: selectedVariation ? selectedVariation.id : null,
+      event_id: eventID,
+      user_data: {
+        client_ip_address: window.location.hostname,
+        client_user_agent: navigator.userAgent,
+      },
     };
 
     try {
       setIsAddToCartLoading(true);
       await dispatch(addToCart(payload)).unwrap();
+      // 🔹 Client-side Pixel event
+      trackAddToCart(product, quantity, selectedVariation, eventID, currentPrice);
     } catch (error) {
       console.error(error);
     } finally {
@@ -370,6 +399,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
               ))}
             </Swiper>
           </div>
+          {/* <pre>{JSON.stringify(selectedVariation, null, 2)}</pre> */}
 
           {/* Product Information */}
           <div className="space-y-6">
