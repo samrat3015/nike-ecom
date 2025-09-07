@@ -7,9 +7,9 @@ export const metadata = {
   title: "Home", // Will become "Home - Next js Ecommerce"
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
-
-
   return (
     <div>
       <Slider />

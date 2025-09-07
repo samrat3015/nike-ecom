@@ -43,22 +43,22 @@ export const fetchProducts = createAsyncThunk<CategoryProducts, void, { rejectVa
 const productsSlice = createSlice({
   name: 'products',
   initialState,
-    reducers: {},
-    extraReducers: (builder) => {
-        builder
-            .addCase(fetchProducts.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(fetchProducts.fulfilled, (state, action) => {
-                state.loading = false;
-                state.products = action.payload;
-            })
-            .addCase(fetchProducts.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.error.message || 'An error occurred';
-            });
-    },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchProducts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProducts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.products = action.payload;
+      })
+      .addCase(fetchProducts.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch products';
+      });
+  },
 });
 
 export default productsSlice.reducer;

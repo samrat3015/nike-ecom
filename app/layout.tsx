@@ -27,16 +27,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${jost.variable} font-sans`}
-      >
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${jost.variable} font-sans`}>
         <Providers>
           <Header />
           {children}
           <Footer />
+          <ToastContainer position="top-right" autoClose={1000} />
         </Providers>
-        <ToastContainer position="top-right" autoClose={1000} />
       </body>
     </html>
   );
