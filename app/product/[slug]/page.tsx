@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import { Heart, Star, ShoppingCart, Minus, Plus, Share2, Truck, ShieldCheck } from 'lucide-react';
 import { addToCart } from "@/store/slices/cartSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,13 +11,13 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 import 'swiper/css/free-mode';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useFbPixel } from "@/hooks/useFbPixel";
 import { v4 as uuidv4 } from "uuid";
-import { u } from "motion/react-client";
+import { RootState, AppDispatch } from "@/store"; // Import typed RootState and AppDispatch
+import SwiperCore from "swiper"; // Import SwiperCore for typing
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
+// Define interfaces for API data
 interface AttributeValue {
   id: number;
   attribute_id: number;
@@ -64,8 +64,9 @@ interface Product {
   variations: Variation[];
 }
 
-async function getProduct(slug: string) {
-  const res = await fetch(`${apiBaseUrl}/product/${slug}`, {
+// Fetch product data from API
+async function getProduct(slug: string): Promise<Product> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product/${slug}`, {
     cache: "no-store",
   });
 
@@ -76,22 +77,27 @@ async function getProduct(slug: string) {
   return res.json();
 }
 
-export default function ProductPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
+// Define props type for the Page component
+interface ProductPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default function ProductPage({ params: paramsPromise }: ProductPageProps) {
   // State management
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: AttributeValue | null }>({});
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const addToCartLoading = useSelector((state: any) => state.cart.loading);
-  const dispatch = useDispatch();
+  const addToCartLoading = useSelector((state: RootState) => state.cart.loading); // Typed RootState
+  const dispatch = useDispatch<AppDispatch>(); // Typed AppDispatch
   const router = useRouter();
 
   const { trackAddToCart, trackViewContent } = useFbPixel();
 
-  // Swiper states
-  const [mainSwiper, setMainSwiper] = useState<any>(null);
-  const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
+  // Swiper states with proper typing
+  const [mainSwiper, setMainSwiper] = useState<SwiperCore | null>(null);
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperCore | null>(null);
 
   // Unwrap params using React.use
   const params = React.use(paramsPromise);
@@ -108,12 +114,11 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
           return;
         }
 
-
         setProduct(productData);
 
         // Initialize selected attributes for variable products
         if (productData?.variations.length > 0) {
-          const attributeGroups = getAttributeGroups(productData?.variations);
+          const attributeGroups = getAttributeGroups(productData.variations);
           const initialAttributes: { [key: string]: AttributeValue | null } = {};
           Object.keys(attributeGroups).forEach((attrName) => {
             const firstAvailable = attributeGroups[attrName].find((item) => item.stock > 0);
@@ -128,7 +133,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
           const index = [...new Set([
             productData.feature_image,
             ...(productData.gallery_images ? JSON.parse(productData.gallery_images) : []),
-            ...productData.variations.map((v) => v.image_path),
+            ...productData.variations.map((v: Variation) => v.image_path), // Typed 'v' as Variation
           ])].filter(Boolean).findIndex((img) => img === imageToShow);
           if (mainSwiper && index !== -1) {
             mainSwiper.slideTo(index);
@@ -148,7 +153,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
     fetchProduct();
   }, [params.slug, mainSwiper]);
 
-
+  // Track view content event
   useEffect(() => {
     if (product) {
       const eventID = uuidv4();
@@ -231,7 +236,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
     try {
       setIsAddToCartLoading(true);
       await dispatch(addToCart(payload)).unwrap();
-      // 🔹 Client-side Pixel event
+      // Client-side Pixel event
       trackAddToCart(product, quantity, selectedVariation, eventID, currentPrice);
     } catch (error) {
       console.error(error);
@@ -241,15 +246,22 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   };
 
   const handleBuyNow = async () => {
+    const eventID = uuidv4();
     const payload = {
       product_id: product!.id,
       quantity,
       product_variation_id: selectedVariation ? selectedVariation.id : null,
+      event_id: eventID,
+      user_data: {
+        client_ip_address: window.location.hostname,
+        client_user_agent: navigator.userAgent,
+      },
     };
 
     try {
       setIsBuyNowLoading(true);
       await dispatch(addToCart(payload)).unwrap();
+      trackAddToCart(product, quantity, selectedVariation, eventID, currentPrice);
       router.push("/checkout");
     } catch (error) {
       console.error(error);
@@ -282,7 +294,7 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
   const allImages = [
     product.feature_image,
     ...galleryImages,
-    ...product.variations.map((v) => v.image_path),
+    ...product.variations.map((v: Variation) => v.image_path),
   ];
   const uniqueImages = [...new Set(allImages)].filter(Boolean);
 
@@ -399,7 +411,6 @@ export default function ProductPage({ params: paramsPromise }: { params: Promise
               ))}
             </Swiper>
           </div>
-          {/* <pre>{JSON.stringify(selectedVariation, null, 2)}</pre> */}
 
           {/* Product Information */}
           <div className="space-y-6">

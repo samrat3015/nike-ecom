@@ -5,6 +5,7 @@ import { initializeAuth, logout } from '@/store/slices/authSlice';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
+import { RootState, AppDispatch } from '@/store';
 
 interface Order {
   id: number;
@@ -28,11 +29,25 @@ interface Order {
     };
     product_variation: {
       attributes: {
+        id: number;
+        product_variation_id: number;
+        attribute_value_id: number;
+        created_at: string;
+        updated_at: string;
         value: {
-          attribute: { name: string };
+          id: number;
+          attribute_id: number;
           value: string;
-        }[];
-      };
+          created_at: string;
+          updated_at: string;
+          attribute: {
+            id: number;
+            name: string;
+            created_at: string;
+            updated_at: string;
+          };
+        };
+      }[];
     };
   }[];
 }
@@ -50,10 +65,13 @@ interface OrdersResponse {
 }
 
 export default function DashboardPage() {
-  const { isAuthenticated, initialized, authLoading, user, access_token } = useSelector(
-    (state: any) => state.auth ?? {}
+  // FIXED: Changed 'authLoading' to 'loading' to match your auth slice state structure
+  const { isAuthenticated, initialized, loading, user, access_token } = useSelector(
+    (state: RootState) => state.auth ?? {}
   );
-  const dispatch = useDispatch();
+  
+  // FIXED: Use typed dispatch
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -128,7 +146,7 @@ export default function DashboardPage() {
     if (isAuthenticated && user?.id && access_token) {
       fetchOrders(currentPage);
     }
-  }, [isAuthenticated, user?.id, access_token, currentPage, fetchOrders, dispatch]);
+  }, [isAuthenticated, user?.id, access_token, currentPage, fetchOrders]);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= pagination.last_page && page !== currentPage) {
@@ -142,7 +160,8 @@ export default function DashboardPage() {
     router.push('/');
   };
 
-  if (authLoading) {
+  // FIXED: Changed 'authLoading' to 'loading'
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-indigo-600"></div>
@@ -166,6 +185,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 text-center">
           Your Dashboard
         </h1>
+        <pre>{JSON.stringify(orders, null, 2)}</pre>
 
         <div className="user-info bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8 transition-all duration-300 hover:shadow-2xl">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">

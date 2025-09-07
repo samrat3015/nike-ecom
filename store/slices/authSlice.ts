@@ -5,6 +5,24 @@ import { fetchCart } from "./cartSlice";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+// Define TypeScript interfaces
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone_number?: string;
+  // Add any other user properties that your API returns
+}
+
+export interface AuthState {
+  user: User | null;
+  access_token: string | null;
+  loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
+  initialized: boolean;
+}
+
 // Add initialization thunk to check for existing token
 const initializeAuth = createAsyncThunk(
     'auth/initializeAuth',
@@ -17,7 +35,7 @@ const initializeAuth = createAsyncThunk(
                 return { hasToken: true };
             }
             return { hasToken: false };
-        } catch (error) {
+        } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message);
         }
     }
@@ -25,7 +43,7 @@ const initializeAuth = createAsyncThunk(
 
 const userRegister = createAsyncThunk(
     'auth/userRegister',
-    async (payload, thunkAPI) => {
+    async (payload: any, thunkAPI) => {
         try {
             const res = await fetch(`${apiBaseUrl}/auth/register`, { // Fixed endpoint
                 method: "POST",
@@ -50,7 +68,7 @@ const userRegister = createAsyncThunk(
                 }
                 return thunkAPI.rejectWithValue(result.message || 'Registration failed');
             }
-        } catch (error) {
+        } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message);
         }
     }
@@ -58,7 +76,7 @@ const userRegister = createAsyncThunk(
 
 const userLogin = createAsyncThunk(
     'auth/userLogin',
-    async (payload, thunkAPI) => {
+    async (payload: any, thunkAPI) => {
         try {
             const res = await fetch(`${apiBaseUrl}/auth/login`, {
                 method: "POST",
@@ -75,13 +93,13 @@ const userLogin = createAsyncThunk(
             } else {
                 return thunkAPI.rejectWithValue(result.message || 'Login failed');
             }
-        } catch (error) {
+        } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message);
         }
     }
 );
 
-const fetchUser = createAsyncThunk(
+const fetchUser = createAsyncThunk<User, void>(
     'auth/fetchUser',
     async (_, thunkAPI) => {
         try {
@@ -106,29 +124,30 @@ const fetchUser = createAsyncThunk(
                 }
                 return thunkAPI.rejectWithValue(result.message || 'Failed to fetch user data');
             }
-        } catch (error) {
+        } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message);
         }
     }
 );
 
+const initialState: AuthState = {
+    user: null,
+    access_token: null,
+    loading: false,
+    error: null,
+    isAuthenticated: false,
+    initialized: false, // Add this to track if auth has been initialized
+};
+
 const authSlice = createSlice({
     name: 'auth',
-    initialState: {
-        user: null,
-        access_token: null,
-        loading: false,
-        error: null,
-        isAuthenticated: false,
-        initialized: false, // Add this to track if auth has been initialized
-    },
+    initialState,
     reducers: {
         logout: (state) => {
             state.user = null;
             state.access_token = null;
             state.isAuthenticated = false;
             Cookies.remove('access_token'); // Clear the token cookie
-            
         },
         clearError: (state) => {
             state.error = null;
@@ -148,7 +167,7 @@ const authSlice = createSlice({
             .addCase(initializeAuth.rejected, (state, action) => {
                 state.loading = false;
                 state.initialized = true;
-                state.error = action.payload;
+                state.error = action.payload as string;
             })
             .addCase(userRegister.pending, (state) => {
                 state.loading = true;
@@ -162,8 +181,8 @@ const authSlice = createSlice({
             })
             .addCase(userRegister.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
-                toast.error(action.payload);
+                state.error = action.payload as string;
+                toast.error(action.payload as string);
             })
             .addCase(userLogin.pending, (state) => {
                 state.loading = true;
@@ -178,8 +197,8 @@ const authSlice = createSlice({
             })
             .addCase(userLogin.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
-                toast.error(action.payload);
+                state.error = action.payload as string;
+                toast.error(action.payload as string);
             })
             .addCase(fetchUser.pending, (state) => {
                 // Don't show loading for fetchUser as it's usually called automatically
@@ -188,17 +207,18 @@ const authSlice = createSlice({
             .addCase(fetchUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.user = action.payload; // Update user data
-                state.access_token = Cookies.get('access_token'); // Sync token from cookie
+                state.access_token = Cookies.get('access_token') || null; // Sync token from cookie
                 state.isAuthenticated = true;
             })
             .addCase(fetchUser.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.payload as string;
                 state.isAuthenticated = false;
                 // Clear token from state if fetch failed
                 state.access_token = null;
                 // Only show toast error if it's not a "no token" error
-                if (!action.payload.includes('No access token found')) {
+                const errorMessage = action.payload as string;
+                if (!errorMessage.includes('No access token found')) {
                     toast.error('Failed to fetch user data');
                 }
             });

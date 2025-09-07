@@ -1,21 +1,9 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // output: 'export', // Enables static export for SSG
+  trailingSlash: true, // Adds trailing slashes to URLs (optional, for compatibility with some hosts)
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "127.0.0.1",
-        port: "",
-        pathname: "/storage/sliders/**",
-      },
-      {
-        protocol: "https",
-        hostname: "127.0.0.1",
-        port: "",
-        pathname: "/storage/products/**",
-      },
-    ],
+    unoptimized: true, // Disables image optimization for static export (required for `output: 'export'`)
   },
 };
 

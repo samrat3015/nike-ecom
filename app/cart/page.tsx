@@ -4,10 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchCart, removeFromCart, updateCartQuantity } from "@/store/slices/cartSlice";
 import CartSkeleton from "@/components/Skeletons/CartSkeleton";
 import Link from "next/link";
+import { RootState, AppDispatch } from "@/store";
 
 export default function Cart() {
-  const dispatch = useDispatch();
-  const { items: cartItems, loading } = useSelector((state: any) => state.cart);
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: cartItems, loading } = useSelector((state: RootState) => state.cart);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -15,20 +16,20 @@ export default function Cart() {
     dispatch(fetchCart());
   }, [dispatch]);
 
-  // ✅ Add safety check - ensure cartItems is an array
+  // Safety check - ensure cartItems is an array
   const safeCartItems = Array.isArray(cartItems) ? cartItems : [];
 
   // Calculate total price
   const subtotal = safeCartItems.reduce((sum: number, item: any) => sum + (parseFloat(item.price) * item.quantity), 0);
   const total = subtotal;
 
-  const handleRemoveFromCart = (itemId: number) => {
+  const handleRemoveFromCart = (itemId: any) => {
     dispatch(removeFromCart(itemId));
   };
 
-  const handleUpdateCartQuantity = (itemId: number, quantity: number) => {
-    dispatch(updateCartQuantity({ item_id: itemId, quantity }));
-  };
+const handleUpdateCartQuantity = (itemId: any, quantity: any) => {
+  dispatch(updateCartQuantity({ item_id: itemId, quantity }));
+};
 
   // Show skeleton while loading or during SSR
   if (!isClient || loading) {
@@ -39,7 +40,7 @@ export default function Cart() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Bag</h1>
-        
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Cart Items */}
           <div className="lg:w-2/3">
@@ -53,9 +54,11 @@ export default function Cart() {
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
                   <p className="text-gray-500 mb-6">Add some items to your cart to get started.</p>
-                  <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition">
-                    Continue Shopping
-                  </button>
+                  <Link href="/products">
+                    <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition">
+                      Continue Shopping
+                    </button>
+                  </Link>
                 </div>
               </div>
             ) : (
@@ -64,33 +67,40 @@ export default function Cart() {
                   <div className="flex flex-col sm:flex-row gap-6">
                     {/* Product Image */}
                     <div className="sm:w-32 w-[100px] bg-gray-200 rounded-md overflow-hidden group">
-                      <img 
-                        src={item.product_image} 
+                      <img
+                        src={item.product_image}
                         alt={item.product_name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     </div>
-                    
+
                     {/* Product Details */}
                     <div className="flex-1">
                       <h2 className="text-lg font-semibold text-gray-900 mb-2">{item.product_name}</h2>
-                      
+
                       <div className="mt-4 flex flex-wrap gap-6">
                         <div className="flex items-center">
                           <span className="text-gray-600 mr-2">Price:</span>
                           <span className="font-medium text-blue-600">TK. {parseFloat(item.price).toFixed(2)}</span>
                         </div>
-                        
+
                         <div className="flex items-center">
                           <span className="text-gray-600 mr-2">Quantity:</span>
                           <div className="flex items-center border rounded-lg overflow-hidden">
-                            <button onClick={() => handleUpdateCartQuantity(item.id, -1)} className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors">
+                            <button
+                              onClick={() => handleUpdateCartQuantity(item.id, item.quantity - 1)}
+                              className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                              disabled={item.quantity <= 1}
+                            >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"></path>
                               </svg>
                             </button>
                             <span className="px-4 py-2 border-x bg-gray-50 min-w-[3rem] text-center">{item.quantity}</span>
-                            <button onClick={() => handleUpdateCartQuantity(item.id, 1)} className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors">
+                            <button
+                              onClick={() => handleUpdateCartQuantity(item.id, item.quantity + 1)}
+                              className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                               </svg>
@@ -98,12 +108,12 @@ export default function Cart() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="mt-6 flex justify-between items-center">
                         <span className="text-xl font-bold text-gray-900">
                           TK. {(parseFloat(item.price) * item.quantity).toFixed(2)}
                         </span>
-                        <button 
+                        <button
                           onClick={() => handleRemoveFromCart(item.id)}
                           className="flex items-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-md transition-colors"
                         >
@@ -124,14 +134,13 @@ export default function Cart() {
           <div className="lg:w-1/3">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
-              
+
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal ({safeCartItems.length} {safeCartItems.length === 1 ? 'item' : 'items'})</span>
                   <span className="font-medium">TK. {subtotal.toFixed(2)}</span>
                 </div>
-                
-                
+
                 <div className="border-t pt-4 mt-4">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
@@ -141,7 +150,10 @@ export default function Cart() {
               </div>
 
               <div className="mt-8 space-y-3">
-                <Link href="/checkout" className="w-full block text-center bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
+                <Link
+                  href="/checkout"
+                  className="w-full block text-center bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                >
                   Proceed to Checkout
                 </Link>
               </div>

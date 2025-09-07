@@ -6,11 +6,12 @@ import { userLogin, fetchUser } from "@/store/slices/authSlice"; // Adjust path 
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import { RootState, AppDispatch } from "@/store"; // Import typed RootState and AppDispatch
 
 export default function Login() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>(); // Use typed AppDispatch
   const router = useRouter();
-  const { loading, error } = useSelector((state: any) => state.auth);
+  const { loading, error } = useSelector((state: RootState) => state.auth); // Use RootState
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +49,7 @@ export default function Login() {
     try {
       // Dispatch login action
       await dispatch(userLogin({ email, password })).unwrap();
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err: any) {
       console.error("Login failed:", err);
       toast.error(err.message || "Login failed");
