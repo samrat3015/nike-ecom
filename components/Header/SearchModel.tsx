@@ -7,13 +7,31 @@ import { useRouter } from "next/navigation";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-const SearchModel = ({ logo, onClose }) => {
+interface SearchModelProps {
+  logo?: string;
+  onClose: () => void;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  feature_image: string;
+  price: string | number;
+  previous_price?: string | number;
+  category?: {
+    slug?: string;
+  };
+  [key: string]: any;
+}
+
+const SearchModel: React.FC<SearchModelProps> = ({ logo, onClose }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [recentSearchTerms, setRecentSearchTerms] = useState([]);
-  const inputRef = useRef(null);
-  const debounceTimeout = useRef(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [recentSearchTerms, setRecentSearchTerms] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const router = useRouter();
 
@@ -42,7 +60,7 @@ const SearchModel = ({ logo, onClose }) => {
   }, []);
 
   // Save recent search terms to localStorage
-  const saveSearchTerm = (term) => {
+  const saveSearchTerm = (term: string) => {
     if (!term.trim()) return;
     
     const updatedTerms = [term, ...recentSearchTerms.filter(t => t !== term)].slice(0, 8); // Keep max 8 recent terms
@@ -78,12 +96,12 @@ const SearchModel = ({ logo, onClose }) => {
     };
   }, [searchQuery, apiBaseUrl]);
 
-  const handleProductClick = (product) => {
+  const handleProductClick = (product: Product) => {
     //console.log("Product clicked:", product.name); // Debug log
     onClose(); // Hide the search model
   };
 
-  const handleRecentTermClick = (term) => {
+  const handleRecentTermClick = (term: string) => {
     setSearchQuery(term);
   };
 
@@ -93,14 +111,14 @@ const SearchModel = ({ logo, onClose }) => {
   };
 
   // Handle logo click to close modal
-  const handleLogoClick = (e) => {
+  const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     onClose();
     router.push('/');
   };
 
   // Handle overlay click to close modal
-  const handleOverlayClick = (e) => {
+  const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
@@ -123,7 +141,7 @@ const SearchModel = ({ logo, onClose }) => {
       y: 0,
       scale: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         damping: 25,
         stiffness: 300
       }
@@ -157,7 +175,7 @@ const SearchModel = ({ logo, onClose }) => {
       opacity: 1, 
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         damping: 20,
         stiffness: 300
       }
@@ -206,7 +224,11 @@ const SearchModel = ({ logo, onClose }) => {
                 >
                   <div className="logo hidden sm:block">
                     <div onClick={handleLogoClick} className="cursor-pointer">
-                      <img src={logo} alt="Nike" className="w-32" />
+                      {logo ? (
+                        <img src={logo} alt="Nike" className="w-32" />
+                      ) : (
+                        <span className="text-xl font-bold">Nike</span>
+                      )}
                     </div>
                   </div>
                 </motion.div>

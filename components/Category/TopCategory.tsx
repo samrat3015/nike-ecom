@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Link from "next/link";
+import type { Category } from "@/types";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -16,11 +17,19 @@ const TopCategory = () => {
     setMounted(true);
   }, []);
 
+  interface RootState {
+    categories: {
+      items: Category[];
+      loading: boolean;
+      error: string | null;
+    };
+  }
+
   const {
     items: categories = [],
     loading: categoriesLoading = false,
     error: categoriesError = null,
-  } = useSelector((state) => state.categories ?? {});
+  } = useSelector((state: RootState) => state.categories ?? { items: [], loading: false, error: null });
 
   if (!mounted) {
     // Prevent hydration mismatch

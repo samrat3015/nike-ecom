@@ -4,12 +4,22 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { userRegister } from "@/store/slices/authSlice";
+import { AnyAction, ThunkDispatch } from "@reduxjs/toolkit";
+
+interface RootState {
+  auth: {
+    loading: boolean;
+    error: string | null;
+  };
+}
+
+type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;
 import { toast } from "react-toastify";
 import Link from "next/link";
 
 // Client-only wrapper component
 function ClientOnlyRegisterForm() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { loading, error } = useSelector((state: any) => state.auth);
 
@@ -21,14 +31,14 @@ function ClientOnlyRegisterForm() {
     phone_number: "",
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     // Basic validation
@@ -38,12 +48,10 @@ function ClientOnlyRegisterForm() {
     }
 
     try {
-      const result = await dispatch(userRegister(formData));
-
-      if (userRegister.fulfilled.match(result)) {
-        // Registration successful, redirect to dashboard or home
-        router.push("/dashboard"); // or wherever you want to redirect
-      }
+      const result = await dispatch(userRegister(formData)).unwrap();
+      
+      // Registration successful, redirect to dashboard or home
+      router.push("/dashboard"); // or wherever you want to redirect
     } catch (error) {
       console.error("Registration error:", error);
     }

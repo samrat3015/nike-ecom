@@ -15,17 +15,25 @@ import { RootState, AppDispatch } from "@/store";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+interface CouponSummary {
+  total_discount: number;
+}
+
+interface CouponItem {
+  cart_item_id: number;
+  coupon_code?: string;
+  discount_amount?: number;
+  discount_type?: string;
+  discounted_price?: number;
+}
+
+interface AppliedCouponData {
+  summary?: CouponSummary;
+  items?: CouponItem[];
+}
+
 interface Coupon {
-  applied?: Array<{
-    summary?: { total_discount: number };
-    items?: Array<{
-      cart_item_id: number;
-      coupon_code?: string;
-      discount_amount?: number;
-      discount_type?: string;
-      discounted_price?: number;
-    }>;
-  }>;
+  applied?: AppliedCouponData[];
 }
 
 export default function Checkout() {

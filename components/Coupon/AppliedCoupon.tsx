@@ -1,19 +1,24 @@
 "use client";
 import React from "react";
+import { CouponData } from "@/types";
 
-export default function AppliedCoupon({ couponData }) {
+interface AppliedCouponProps {
+  couponData: CouponData | null;
+}
+
+export default function AppliedCoupon({ couponData }: AppliedCouponProps) {
   if (!couponData || !couponData.applied || couponData.applied.length === 0) {
     return null;
   }
 
-  const { coupon_code } = couponData.applied[0];
   const appliedCoupon = couponData.applied[0];
+  const coupon_code = appliedCoupon.coupon_code;
 
   // Default values
   let discount_amount = null;
   let discount_type = null;
 
-  const matchedItem = appliedCoupon.items.find(
+  const matchedItem = appliedCoupon.items?.find(
     (item) =>
       item.discount_amount !== undefined && item.discount_type !== undefined
   );

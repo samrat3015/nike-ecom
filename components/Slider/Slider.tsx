@@ -24,7 +24,7 @@ const Slider = () => {
   );
 
   useEffect(() => {
-    dispatch(fetchSlider());
+    dispatch(fetchSlider() as any);
   }, [dispatch]);
 
   return (

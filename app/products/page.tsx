@@ -6,14 +6,31 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "@/store/slices/categoriesSlice";
+import { AnyAction, ThunkDispatch } from "@reduxjs/toolkit";
+
+type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;
 import ProductCard from "@/components/Product/ProductCard";
 import { useRouter, useSearchParams } from "next/navigation";
 
-// Accordion-style category component
-const CategoryAccordion = ({ categories, selectedIds, onSelect }) => {
-  const [openCategories, setOpenCategories] = useState({});
+// Define interfaces for the category data structure
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  children?: Category[];
+}
 
-  const toggleCategory = (id) => {
+interface CategoryAccordionProps {
+  categories: Category[];
+  selectedIds: number[];
+  onSelect: (id: number) => void;
+}
+
+// Accordion-style category component
+const CategoryAccordion = ({ categories, selectedIds, onSelect }: CategoryAccordionProps) => {
+  const [openCategories, setOpenCategories] = useState<Record<number, boolean>>({});
+
+  const toggleCategory = (id: number) => {
     setOpenCategories((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
@@ -72,7 +89,7 @@ const CategoryAccordion = ({ categories, selectedIds, onSelect }) => {
 };
 
 // Helper function to find category by slug
-const findCategoryBySlug = (categories, slug) => {
+const findCategoryBySlug = (categories: Category[], slug: string): Category | null => {
   for (const category of categories) {
     if (category.slug === slug) {
       return category;
@@ -86,7 +103,7 @@ const findCategoryBySlug = (categories, slug) => {
 };
 
 // Helper function to find category name by ID
-const findCategoryName = (categories, id) => {
+const findCategoryName = (categories: Category[], id: number): string | null => {
   for (const cat of categories) {
     if (cat.id === id) return cat.name;
     if (cat.children) {
@@ -98,21 +115,57 @@ const findCategoryName = (categories, id) => {
 };
 
 // Main ProductFilter component
+interface Attribute {
+  id: number;
+  name: string;
+  values: Array<{
+    id: number;
+    value: string;
+  }>;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  feature_image: string;
+  price: string | number;
+  previous_price?: string | number;
+  category?: {
+    slug?: string;
+  };
+  [key: string]: any;
+}
+
+interface Pagination {
+  current_page: number;
+  last_page: number;
+  total: number;
+}
+
+interface RootState {
+  categories: {
+    items: Category[];
+    loading: boolean;
+    error: string | null;
+  };
+}
+
 export default function ProductFilter() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const { items: categories, loading: categoriesLoading, error: categoriesError } = useSelector(
-    (state) => state.categories ?? {}
+    (state: RootState) => state.categories ?? { items: [], loading: false, error: null }
   );
 
-  const [attributes, setAttributes] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
-  const [selectedAttributeValues, setSelectedAttributeValues] = useState({});
-  const [sortBy, setSortBy] = useState("latest");
+  const [attributes, setAttributes] = useState<Attribute[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({ current_page: 1, last_page: 1, total: 0 });
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [selectedAttributeValues, setSelectedAttributeValues] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState<"latest" | "price_low_to_high" | "price_high_to_low">("latest");
   const [page, setPage] = useState(1);
   const [categorySlug, setCategorySlug] = useState("");
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -127,10 +180,10 @@ export default function ProductFilter() {
     const slug = searchParams.get("category_slug") || "";
     const minPriceParam = searchParams.get("min_price") || "";
     const maxPriceParam = searchParams.get("max_price") || "";
-    const sortParam = searchParams.get("sort_by") || "latest";
-    const pageParam = parseInt(searchParams.get("page")) || 1;
+    const sortParam = (searchParams.get("sort_by") || "latest") as "latest" | "price_low_to_high" | "price_high_to_low";
+    const pageParam = parseInt(searchParams.get("page") || "1");
 
-    const attributeParams = {};
+    const attributeParams: Record<string, string[]> = {};
     for (const [key, value] of searchParams.entries()) {
       const match = key.match(/^attributes\[(.+)\]\[\]$/);
       if (match) {
@@ -178,11 +231,11 @@ export default function ProductFilter() {
       params.append("category_slug", categorySlug);
     }
     
-    selectedCategoryIds.forEach((id) => params.append("category_ids[]", id));
+    selectedCategoryIds.forEach((id) => params.append("category_ids[]", id.toString()));
     if (minPrice) params.append("min_price", minPrice);
     if (maxPrice) params.append("max_price", maxPrice);
     params.append("sort_by", sortBy);
-    params.append("page", page);
+    params.append("page", page.toString());
 
     Object.entries(selectedAttributeValues).forEach(([attrName, values]) => {
       values.forEach((value) => {
@@ -231,11 +284,9 @@ export default function ProductFilter() {
         params.append("category_slug", categorySlug);
       }
       
-      selectedCategoryIds.forEach((id) => params.append("category_ids[]", id));
-      params.append("sort_by", sortBy);
-      params.append("page", page);
-
-      if (minPrice) params.append("min_price", minPrice);
+    selectedCategoryIds.forEach((id) => params.append("category_ids[]", id.toString()));
+    params.append("sort_by", sortBy);
+    params.append("page", page.toString());      if (minPrice) params.append("min_price", minPrice);
       if (maxPrice) params.append("max_price", maxPrice);
 
       Object.entries(selectedAttributeValues).forEach(([attrName, values]) => {
@@ -275,7 +326,7 @@ export default function ProductFilter() {
   }, [isClient, selectedCategoryIds, selectedAttributeValues, sortBy, page, categorySlug, minPrice, maxPrice]);
 
   // Handle category selection
-  const handleCategorySelect = (id) => {
+  const handleCategorySelect = (id: number) => {
     setSelectedCategoryIds((prev) => {
       const newIds = prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id];
       
@@ -290,7 +341,7 @@ export default function ProductFilter() {
   };
 
   // Handle attribute value selection
-  const handleAttributeSelect = (attrName, value) => {
+  const handleAttributeSelect = (attrName: string, value: string) => {
     setSelectedAttributeValues((prev) => {
       const values = prev[attrName] || [];
       const newValues = values.includes(value)
@@ -302,25 +353,25 @@ export default function ProductFilter() {
   };
 
   // Handle sort change
-  const handleSortChange = (e) => {
-    setSortBy(e.target.value);
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(e.target.value as "latest" | "price_low_to_high" | "price_high_to_low");
     setPage(1);
   };
 
   // Handle pagination
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.last_page) {
       setPage(newPage);
     }
   };
 
   // Handle price filter changes
-  const handleMinPriceChange = (e) => {
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMinPrice(e.target.value);
     setPage(1);
   };
 
-  const handleMaxPriceChange = (e) => {
+  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMaxPrice(e.target.value);
     setPage(1);
   };

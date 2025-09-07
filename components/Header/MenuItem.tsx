@@ -15,8 +15,8 @@ interface MenuItemProps {
 
 
   // Function to collect all category IDs from a category and its children
-const getAllCategoryIds = (category) => {
-  let ids = [];
+const getAllCategoryIds = (category: Category): number[] => {
+  let ids: number[] = [];
 
   // Add the current category ID if it exists
   if (category.id) {
@@ -34,7 +34,7 @@ const getAllCategoryIds = (category) => {
 };
 
 // Function to generate URL with all category IDs
-const generateCategoryUrl = (category) => {
+const generateCategoryUrl = (category: Category): string => {
   if (!category.slug) {
     return "";
   }

@@ -4,20 +4,40 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "@/store/slices/productsSlice";
 import ProductCard from "./ProductCard";
-import ProductCardSkeleton from "@/components/Skeletons/ProductCardSkeleton"; // Import the skeleton component
+import ProductCardSkeleton from "@/components/Skeletons/ProductCardSkeleton";
+import { AppDispatch, RootState } from "@/store";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Scrollbar } from "swiper/modules";
+import type { UnknownAction } from "@reduxjs/toolkit";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/scrollbar";
 import Link from "next/link";
 
-const Products = () => {
-  const dispatch = useDispatch();
-  const { products, loading, error } = useSelector((state: any) => state.products);
+// Define product interface
+export interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  feature_image: string;
+  price: string | number;
+  previous_price?: string | number;
+  category?: {
+    slug?: string;
+  };
+  [key: string]: any;
+}
+
+interface CategoryProducts {
+  [key: string]: Product[];
+}
+
+const HomeProducts = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { products, loading, error } = useSelector((state: RootState) => state.products);
 
   useEffect(() => {
-    dispatch(fetchProducts());
+    dispatch(fetchProducts() as any);
   }, [dispatch]);
 
   return (
@@ -52,7 +72,6 @@ const Products = () => {
                 }}
                 className="mySwiper"
               >
-                {/* Render 3 skeleton cards to match slidesPerView */}
                 {[...Array(3)].map((_, index) => (
                   <SwiperSlide key={index} className="product_line_item">
                     <ProductCardSkeleton />
@@ -66,8 +85,9 @@ const Products = () => {
         <div className="text-red-500 text-center">Error: {error}</div>
       ) : (
         <div>
-          {Object.keys(products).map((categoryKey) => {
-            const firstProduct = products[categoryKey][0];
+          {Object.keys(products as CategoryProducts).map((categoryKey) => {
+            const categoryProducts = (products as CategoryProducts)[categoryKey];
+            const firstProduct = categoryProducts?.[0];
             const categorySlug = firstProduct?.category?.slug;
 
             return (
@@ -142,7 +162,7 @@ const Products = () => {
                     }}
                     className="mySwiper"
                   >
-                    {products[categoryKey].map((product) => (
+                    {categoryProducts.map((product: Product) => (
                       <SwiperSlide key={product.id} className="product_line_item">
                         <ProductCard product={product} />
                       </SwiperSlide>
@@ -158,4 +178,4 @@ const Products = () => {
   );
 };
 
-export default Products;
+export default HomeProducts;

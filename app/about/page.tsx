@@ -1,15 +1,17 @@
-"use client"
-import { useSelector, useDispatch } from "react-redux"
-import { useEffect, useState } from "react"
-import { increment, decrement, reset } from "@/store/slices/counterSlice"
+"use client";
+
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
+import { increment, decrement, reset } from "@/store/slices/counterSlice";
+import { AppDispatch, RootState } from "@/store";
 
 export default function About() {
-  const count = useSelector((state: any) => state.counter.value)
-  const dispatch = useDispatch()
-  const [mounted, setMounted] = useState(false)
+  const count = useSelector((state: RootState) => state.counter.value);
+  const dispatch = useDispatch<AppDispatch>();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
+    setMounted(true);
   }, [])
 
   if (!mounted) return null // Wait for client hydration

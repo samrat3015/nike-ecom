@@ -3,17 +3,39 @@
 import { s } from "motion/react-client";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
+interface Page {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface FooterSettings {
+  attention_notice?: string;
+  facebook_url?: string;
+  tiktok_url?: string;
+  instagram_url?: string;
+  x_url?: string;
+  facebook_iframe?: string;
+  site_name?: string;
+}
+
+interface FooterMedia {
+  footer_logo?: string;
+  footer_payment_logo?: string;
+}
+
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export default function Footer() {
   const {
-    settings = {},
-    media = {},
+    settings = {} as FooterSettings,
+    media = {} as FooterMedia,
     loading: settingsLoading = false,
     error: settingsError = null,
-  } = useSelector((state: any) => state.settings ?? {});
+  } = useSelector((state: { settings: { settings: FooterSettings; media: FooterMedia; loading: boolean; error: string | null } }) => state.settings);
 
-  const [pages, setPages] = useState([]);
+  const [pages, setPages] = useState<Page[]>([]);
 
   const fetchPageData = async () => {
     try {
@@ -70,7 +92,7 @@ export default function Footer() {
           </div>
           <div className="footer_widget">
             <div
-              dangerouslySetInnerHTML={{ __html: settings?.facebook_iframe }}
+              dangerouslySetInnerHTML={{ __html: settings?.facebook_iframe || '' }}
             />
           </div>
         </div>

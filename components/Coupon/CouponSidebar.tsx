@@ -3,11 +3,32 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { X, Tag, Calendar, ShoppingCart, Percent, DollarSign, Gift } from "lucide-react";
+import { CouponData } from "@/types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-export default function CouponSidebar({ isOpen, onClose, cartTotal, cartId, onCouponApplied }) {
-  const [coupons, setCoupons] = useState([]);
+interface Coupon {
+  id: number;
+  code: string;
+  name: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  minimum_order_amount: number | null;
+  expiry_date: string;
+  uses_count: number;
+  max_uses: number;
+}
+
+interface CouponSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  cartTotal: number;
+  cartId: number | null;
+  onCouponApplied: (coupon: CouponData) => void;
+}
+
+export default function CouponSidebar({ isOpen, onClose, cartTotal, cartId, onCouponApplied }: CouponSidebarProps) {
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -37,7 +58,7 @@ export default function CouponSidebar({ isOpen, onClose, cartTotal, cartId, onCo
     }
   };
 
-  const handleApplyCoupon = async (coupon) => {
+  const handleApplyCoupon = async (coupon: Coupon) => {
     try {
       const payload = {
         code: coupon.code,
@@ -68,11 +89,11 @@ export default function CouponSidebar({ isOpen, onClose, cartTotal, cartId, onCo
   const sidebarVariants = {
     open: {
       x: 0,
-      transition: { type: "spring", stiffness: 300, damping: 30 }
+      transition: { type: "spring" as const, stiffness: 300, damping: 30 }
     },
     closed: {
       x: "100%",
-      transition: { type: "spring", stiffness: 300, damping: 30 }
+      transition: { type: "spring" as const, stiffness: 300, damping: 30 }
     }
   };
 
@@ -82,7 +103,7 @@ export default function CouponSidebar({ isOpen, onClose, cartTotal, cartId, onCo
     hover: { y: -2, transition: { duration: 0.2 } }
   };
 
-  const getDiscountDisplay = (coupon) => {
+  const getDiscountDisplay = (coupon: Coupon) => {
     if (coupon.discount_type === "percentage") {
       return (
         <div className="flex items-center space-x-1 text-emerald-600">
@@ -98,9 +119,9 @@ export default function CouponSidebar({ isOpen, onClose, cartTotal, cartId, onCo
     }
   };
 
-  const getCouponStatus = (coupon) => {
+  const getCouponStatus = (coupon: Coupon) => {
     const minOrder = coupon.minimum_order_amount;
-    const isValid = minOrder === null || minOrder === undefined || minOrder === "" ? true : parseFloat(cartTotal) >= parseFloat(minOrder);
+    const isValid = !minOrder || cartTotal >= minOrder;
     const isExpired = new Date(coupon.expiry_date) < new Date();
     const isMaxUsed = coupon.uses_count >= coupon.max_uses;
 
@@ -276,7 +297,7 @@ export default function CouponSidebar({ isOpen, onClose, cartTotal, cartId, onCo
                           {/* Savings Highlight */}
                           {!isDisabled && coupon.discount_type === "percentage" && (
                             <div className="absolute -top-2 -right-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                              SAVE UP TO ৳{Math.round(parseFloat(cartTotal) * (coupon.discount_value / 100))}
+                              SAVE UP TO ৳{Math.round(cartTotal * (coupon.discount_value / 100))}
                             </div>
                           )}
                         </div>
