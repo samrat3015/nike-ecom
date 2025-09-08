@@ -1,15 +1,16 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-// Define types
 export interface Product {
   id: number;
   name: string;
-  category?: {
-    slug?: string;
-  };
-  [key: string]: any; // Add other product fields as needed
+  slug: string;
+  feature_image: string;
+  price: string | number;
+  previous_price?: string | number;
+  category?: { slug?: string; name?: string };
+  [key: string]: any;
 }
 
 export type CategoryProducts = Record<string, Product[]>;
@@ -20,28 +21,38 @@ interface ProductsState {
   error: string | null;
 }
 
-// Initial state with types
 const initialState: ProductsState = {
   products: {},
   loading: false,
   error: null,
 };
 
-// Async thunk to fetch products
-export const fetchProducts = createAsyncThunk<CategoryProducts, void, { rejectValue: string }>(
-  'products/fetchProducts',
-  async () => {
+export const fetchProducts = createAsyncThunk<
+  CategoryProducts,
+  void,
+  { rejectValue: string }
+>("products/fetchProducts", async (_, { rejectWithValue }) => {
+  try {
+    //console.log("Fetching from:", `${apiBaseUrl}/category-with-products`);
     const res = await fetch(`${apiBaseUrl}/category-with-products`);
     if (!res.ok) {
-      throw new Error('Failed to fetch products');
+      const errorText = await res.text();
+      return rejectWithValue(`Failed to fetch products: ${res.status} ${errorText}`);
     }
     const data = await res.json();
-    return data.data || {};
+    //console.log("API response:", data);
+    // Directly return the response, as it matches CategoryProducts
+    if (!data || typeof data !== "object") {
+      return rejectWithValue("Invalid data format received");
+    }
+    return data; // Changed from data.data to data
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Fetch error");
   }
-);
+});
 
 const productsSlice = createSlice({
-  name: 'products',
+  name: "products",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
@@ -52,11 +63,33 @@ const productsSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = action.payload;
+        const payload = action.payload;
+        console.log("Processed payload:", payload);
+        if (payload && typeof payload === "object") {
+          state.products = Object.entries(payload).reduce(
+            (acc, [key, value]) => {
+              if (Array.isArray(value)) {
+                acc[key] = value.map((product) => ({
+                  ...product,
+                  price: product.price || 0,
+                  feature_image: product.feature_image || "",
+                  slug: product.slug || `product-${product.id}`,
+                }));
+              }
+              return acc;
+            },
+            {} as CategoryProducts
+          );
+        } else {
+          state.products = {};
+          state.error = "Invalid data format received";
+        }
       })
-      .addCase(fetchProducts.rejected, (state, action: any) => {
+      .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch products';
+        state.error = action.payload as string || action.error.message || "Failed to fetch products";
+        state.products = {};
+        console.error("Fetch error:", state.error);
       });
   },
 });
