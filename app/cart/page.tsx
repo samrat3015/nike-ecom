@@ -24,7 +24,8 @@ export default function Cart() {
   const total = subtotal;
 
   const handleRemoveFromCart = (itemId: any) => {
-    dispatch(removeFromCart(itemId));
+    //console.log("Removing item:", itemId);
+    dispatch(removeFromCart({ item_id: itemId }));
   };
 
 const handleUpdateCartQuantity = (itemId: any, quantity: any) => {
