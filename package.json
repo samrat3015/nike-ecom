@@ -2,14 +2,15 @@
   "name": "next-ecom",
   "version": "0.1.0",
   "private": true,
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "export": "next export"
-},
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next export"
+  },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
+    "axios": "^1.12.2",
     "html-react-parser": "^5.2.6",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.542.0",

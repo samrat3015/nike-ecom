@@ -1,281 +1,286 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { Heart, Star, ShoppingCart, Minus, Plus, Share2, Truck, ShieldCheck } from 'lucide-react';
-import { addToCart } from "@/store/slices/cartSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { useRouter, notFound } from "next/navigation";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/thumbs';
-import 'swiper/css/free-mode';
-import { motion } from "framer-motion";
-import { useFbPixel } from "@/hooks/useFbPixel";
-import { v4 as uuidv4 } from "uuid";
-import { RootState, AppDispatch } from "@/store"; // Import typed RootState and AppDispatch
-import SwiperCore from "swiper"; // Import SwiperCore for typing
+import React, { useState, useEffect, useRef } from "react"
+import { Star, ShoppingCart, Minus, Plus, Share2, Truck, ShieldCheck } from "lucide-react"
+import { addToCart } from "@/store/slices/cartSlice"
+import { useDispatch, useSelector } from "react-redux"
+import { useRouter, notFound } from "next/navigation"
+import { Swiper, SwiperSlide } from "swiper/react"
+import { Navigation, Thumbs, FreeMode } from "swiper/modules"
+import "swiper/css"
+import "swiper/css/navigation"
+import "swiper/css/thumbs"
+import "swiper/css/free-mode"
+import { motion } from "framer-motion"
+import { useFbPixel } from "@/hooks/useFbPixel"
+import type { RootState, AppDispatch } from "@/store" // Import typed RootState and AppDispatch
+import type SwiperCore from "swiper" // Import SwiperCore for typing
 
 // Define interfaces for API data
 interface AttributeValue {
-  id: number;
-  attribute_id: number;
-  value: string;
+  id: number
+  attribute_id: number
+  value: string
   attribute: {
-    id: number;
-    name: string;
-  };
+    id: number
+    name: string
+  }
 }
 
 interface Variation {
-  id: number;
-  product_id: number;
-  price: string;
-  stock: number;
-  sold_stock: number;
-  image_path: string;
+  id: number
+  product_id: number
+  price: string
+  stock: number
+  sold_stock: number
+  image_path: string
   attributes: Array<{
-    id: number;
-    product_variation_id: number;
-    attribute_value_id: number;
-    value: AttributeValue;
-  }>;
+    id: number
+    product_variation_id: number
+    attribute_value_id: number
+    value: AttributeValue
+  }>
 }
 
 interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  product_code: string;
-  description: string;
-  feature_image: string;
-  gallery_images: string;
-  price: string;
-  previous_price: string;
-  stock: number;
-  sold_stock: number;
-  is_free_delivery: boolean;
+  id: number
+  name: string
+  slug: string
+  product_code: string
+  description: string
+  feature_image: string
+  gallery_images: string
+  price: string
+  previous_price: string
+  stock: number
+  sold_stock: number
+  is_free_delivery: boolean
   category: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-  variations: Variation[];
+    id: number
+    name: string
+    slug: string
+  }
+  variations: Variation[]
 }
 
 // Fetch product data from API
 async function getProduct(slug: string): Promise<Product> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product/${slug}`, {
     cache: "no-store",
-  });
+  })
 
   if (!res.ok) {
-    throw new Error("Failed to fetch product");
+    throw new Error("Failed to fetch product")
   }
 
-  return res.json();
+  return res.json()
 }
 
 // Define props type for the Page component
 interface ProductPageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string }>
 }
 
 export default function ProductPage({ params: paramsPromise }: ProductPageProps) {
   // State management
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: AttributeValue | null }>({});
-  const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const addToCartLoading = useSelector((state: RootState) => state.cart.loading); // Typed RootState
-  const dispatch = useDispatch<AppDispatch>(); // Typed AppDispatch
-  const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: AttributeValue | null }>({})
+  const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null)
+  const [quantity, setQuantity] = useState(1)
+  const addToCartLoading = useSelector((state: RootState) => state.cart.loading) // Typed RootState
+  const dispatch = useDispatch<AppDispatch>() // Typed AppDispatch
+  const router = useRouter()
 
-  const { trackAddToCart, trackViewContent } = useFbPixel();
+  const { trackAddToCart, trackViewContent } = useFbPixel()
+
+  const viewContentTracked = useRef<number | null>(null)
 
   // Swiper states with proper typing
-  const [mainSwiper, setMainSwiper] = useState<SwiperCore | null>(null);
-  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperCore | null>(null);
+  const [mainSwiper, setMainSwiper] = useState<SwiperCore | null>(null)
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperCore | null>(null)
 
   // Unwrap params using React.use
-  const params = React.use(paramsPromise);
+  const params = React.use(paramsPromise)
 
   // Fetch product data and set initial state
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const productData = await getProduct(params.slug);
+        const productData = await getProduct(params.slug)
 
         // Check if productData is valid
         if (!productData || Object.keys(productData).length === 0) {
-          notFound(); // Trigger Next.js 404 page
-          return;
+          notFound() // Trigger Next.js 404 page
+          return
         }
 
-        setProduct(productData);
+        setProduct(productData)
 
         // Initialize selected attributes for variable products
         if (productData?.variations.length > 0) {
-          const attributeGroups = getAttributeGroups(productData.variations);
-          const initialAttributes: { [key: string]: AttributeValue | null } = {};
+          const attributeGroups = getAttributeGroups(productData.variations)
+          const initialAttributes: { [key: string]: AttributeValue | null } = {}
           Object.keys(attributeGroups).forEach((attrName) => {
-            const firstAvailable = attributeGroups[attrName].find((item) => item.stock > 0);
-            initialAttributes[attrName] = firstAvailable ? firstAvailable.value : attributeGroups[attrName][0]?.value || null;
-          });
-          setSelectedAttributes(initialAttributes);
-          const initialVariation = findVariationByAttributes(productData.variations, initialAttributes);
-          setSelectedVariation(initialVariation || null);
+            const firstAvailable = attributeGroups[attrName].find((item) => item.stock > 0)
+            initialAttributes[attrName] = firstAvailable
+              ? firstAvailable.value
+              : attributeGroups[attrName][0]?.value || null
+          })
+          setSelectedAttributes(initialAttributes)
+          const initialVariation = findVariationByAttributes(productData.variations, initialAttributes)
+          setSelectedVariation(initialVariation || null)
 
           // Set initial slide to variation image or feature image
-          const imageToShow = initialVariation?.image_path || productData.feature_image;
-          const index = [...new Set([
-            productData.feature_image,
-            ...(productData.gallery_images ? JSON.parse(productData.gallery_images) : []),
-            ...productData.variations.map((v: Variation) => v.image_path), // Typed 'v' as Variation
-          ])].filter(Boolean).findIndex((img) => img === imageToShow);
+          const imageToShow = initialVariation?.image_path || productData.feature_image
+          const index = [
+            ...new Set([
+              productData.feature_image,
+              ...(productData.gallery_images ? JSON.parse(productData.gallery_images) : []),
+              ...productData.variations.map((v: Variation) => v.image_path), // Typed 'v' as Variation
+            ]),
+          ]
+            .filter(Boolean)
+            .findIndex((img) => img === imageToShow)
           if (mainSwiper && index !== -1) {
-            mainSwiper.slideTo(index);
+            mainSwiper.slideTo(index)
           }
         } else {
           // For simple products, no variation or attributes
-          setSelectedVariation(null);
-          setSelectedAttributes({});
+          setSelectedVariation(null)
+          setSelectedAttributes({})
         }
-        setLoading(false);
+        setLoading(false)
       } catch (error) {
-        console.error("Error fetching product:", error);
-        setLoading(false);
+        console.error("Error fetching product:", error)
+        setLoading(false)
       }
-    };
-
-    fetchProduct();
-  }, [params.slug, mainSwiper]);
-
-  // Track view content event
-  useEffect(() => {
-    if (product) {
-      const eventID = uuidv4();
-      trackViewContent(product, eventID, currentPrice);
     }
-  }, [product]);
+
+    fetchProduct()
+  }, [params.slug, mainSwiper])
+
+  useEffect(() => {
+    if (product && product.id && viewContentTracked.current !== product.id) {
+      // Calculate current price
+      const basePrice = Number.parseFloat(product.price)
+      const variationPrice = selectedVariation ? Number.parseFloat(selectedVariation.price) : 0
+      const currentPrice = basePrice + variationPrice
+
+      trackViewContent(product, currentPrice)
+      viewContentTracked.current = product.id
+    }
+  }, [product]) // Only depend on product
 
   // Group attributes by name for variable products
   const getAttributeGroups = (variations: Variation[]) => {
-    return variations.reduce((acc: { [key: string]: Array<{ variationId: number; stock: number; value: AttributeValue }> }, variation) => {
-      variation.attributes.forEach((attr) => {
-        const attrName = attr.value.attribute.name;
-        if (!acc[attrName]) acc[attrName] = [];
-        if (!acc[attrName].some((v) => v.value.id === attr.value.id)) {
-          acc[attrName].push({
-            variationId: variation.id,
-            stock: variation.stock,
-            value: attr.value,
-          });
-        }
-      });
-      return acc;
-    }, {});
-  };
+    return variations.reduce(
+      (acc: { [key: string]: Array<{ variationId: number; stock: number; value: AttributeValue }> }, variation) => {
+        variation.attributes.forEach((attr) => {
+          const attrName = attr.value.attribute.name
+          if (!acc[attrName]) acc[attrName] = []
+          if (!acc[attrName].some((v) => v.value.id === attr.value.id)) {
+            acc[attrName].push({
+              variationId: variation.id,
+              stock: variation.stock,
+              value: attr.value,
+            })
+          }
+        })
+        return acc
+      },
+      {},
+    )
+  }
 
   // Find variation matching selected attributes
-  const findVariationByAttributes = (variations: Variation[], selectedAttrs: { [key: string]: AttributeValue | null }) => {
+  const findVariationByAttributes = (
+    variations: Variation[],
+    selectedAttrs: { [key: string]: AttributeValue | null },
+  ) => {
     const variation = variations.find((variation) =>
       variation.attributes.every((attr) => {
-        const attrName = attr.value.attribute.name;
-        return selectedAttrs[attrName]?.id === attr.value.id;
-      })
-    );
-    return variation || null;
-  };
+        const attrName = attr.value.attribute.name
+        return selectedAttrs[attrName]?.id === attr.value.id
+      }),
+    )
+    return variation || null
+  }
 
   // Handle attribute selection for variable products
   const handleAttributeChange = (attrName: string, value: AttributeValue) => {
-    const newSelectedAttributes = { ...selectedAttributes, [attrName]: value };
-    setSelectedAttributes(newSelectedAttributes);
-    const variation = findVariationByAttributes(product!.variations, newSelectedAttributes);
-    setSelectedVariation(variation);
-    setQuantity(1); // Reset quantity when variation changes
+    const newSelectedAttributes = { ...selectedAttributes, [attrName]: value }
+    setSelectedAttributes(newSelectedAttributes)
+    const variation = findVariationByAttributes(product!.variations, newSelectedAttributes)
+    setSelectedVariation(variation)
+    setQuantity(1) // Reset quantity when variation changes
 
     // Slide to the variation image if available
     if (variation && mainSwiper) {
-      const imageToShow = variation.image_path || product!.feature_image;
-      const index = uniqueImages.findIndex((img) => img === imageToShow);
+      const imageToShow = variation.image_path || product!.feature_image
+      const index = uniqueImages.findIndex((img) => img === imageToShow)
       if (index !== -1) {
-        mainSwiper.slideTo(index);
+        mainSwiper.slideTo(index)
       }
     }
-  };
+  }
 
   // Handle quantity change
   const handleQuantityChange = (change: number) => {
-    const newQuantity = quantity + change;
-    const maxStock = selectedVariation ? selectedVariation.stock : product!.stock;
+    const newQuantity = quantity + change
+    const maxStock = selectedVariation ? selectedVariation.stock : product!.stock
     if (newQuantity >= 1 && newQuantity <= maxStock) {
-      setQuantity(newQuantity);
+      setQuantity(newQuantity)
     }
-  };
+  }
 
-  const [isAddToCartLoading, setIsAddToCartLoading] = useState(false);
-  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
+  const [isAddToCartLoading, setIsAddToCartLoading] = useState(false)
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false)
 
   const handleAddToCart = async () => {
-    const eventID = uuidv4();
     const payload = {
       product_id: product!.id,
       quantity,
       product_variation_id: selectedVariation ? selectedVariation.id : null,
-      event_id: eventID,
-      user_data: {
-        client_ip_address: window.location.hostname,
-        client_user_agent: navigator.userAgent,
-      },
-    };
+    }
 
     try {
-      setIsAddToCartLoading(true);
-      await dispatch(addToCart(payload)).unwrap();
+      setIsAddToCartLoading(true)
+      await dispatch(addToCart(payload)).unwrap()
       // Client-side Pixel event
-      trackAddToCart(product, quantity, selectedVariation, eventID, currentPrice);
+      trackAddToCart(product, quantity, selectedVariation, currentPrice)
     } catch (error) {
-      console.error(error);
+      console.error(error)
     } finally {
-      setIsAddToCartLoading(false);
+      setIsAddToCartLoading(false)
     }
-  };
+  }
 
   const handleBuyNow = async () => {
-    const eventID = uuidv4();
     const payload = {
       product_id: product!.id,
       quantity,
       product_variation_id: selectedVariation ? selectedVariation.id : null,
-      event_id: eventID,
-      user_data: {
-        client_ip_address: window.location.hostname,
-        client_user_agent: navigator.userAgent,
-      },
-    };
+    }
 
     try {
-      setIsBuyNowLoading(true);
-      await dispatch(addToCart(payload)).unwrap();
-      trackAddToCart(product, quantity, selectedVariation, eventID, currentPrice);
-      router.push("/checkout");
+      setIsBuyNowLoading(true)
+      await dispatch(addToCart(payload)).unwrap()
+      trackAddToCart(product, quantity, selectedVariation, currentPrice)
+      router.push("/checkout")
     } catch (error) {
-      console.error(error);
+      console.error(error)
     } finally {
-      setIsBuyNowLoading(false);
+      setIsBuyNowLoading(false)
     }
-  };
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
-    );
+    )
   }
 
   if (!product) {
@@ -286,29 +291,23 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
           <p className="text-gray-600">The requested product could not be found.</p>
         </div>
       </div>
-    );
+    )
   }
 
   // Parse gallery images
-  const galleryImages = product.gallery_images ? JSON.parse(product.gallery_images) : [];
-  const allImages = [
-    product.feature_image,
-    ...galleryImages,
-    ...product.variations.map((v: Variation) => v.image_path),
-  ];
-  const uniqueImages = [...new Set(allImages)].filter(Boolean);
+  const galleryImages = product.gallery_images ? JSON.parse(product.gallery_images) : []
+  const allImages = [product.feature_image, ...galleryImages, ...product.variations.map((v: Variation) => v.image_path)]
+  const uniqueImages = [...new Set(allImages)].filter(Boolean)
 
   // Calculate prices with main + variation
-  const basePrice = parseFloat(product.price);
-  const basePreviousPrice = product.previous_price ? parseFloat(product.previous_price) : 0;
-  const variationPrice = selectedVariation ? parseFloat(selectedVariation.price) : 0;
-  const currentPrice = basePrice + variationPrice;
-  const previousPrice = basePreviousPrice + variationPrice;
+  const basePrice = Number.parseFloat(product?.price || "0")
+  const basePreviousPrice = product?.previous_price ? Number.parseFloat(product.previous_price) : 0
+  const variationPrice = selectedVariation ? Number.parseFloat(selectedVariation.price) : 0
+  const currentPrice = basePrice + variationPrice
+  const previousPrice = basePreviousPrice + variationPrice
 
   // Calculate discount percentage
-  const discountPercentage = previousPrice > 0
-    ? Math.round(((previousPrice - currentPrice) / previousPrice) * 100)
-    : 0;
+  const discountPercentage = previousPrice > 0 ? Math.round(((previousPrice - currentPrice) / previousPrice) * 100) : 0
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -365,8 +364,8 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
               <Swiper
                 modules={[Navigation, Thumbs, FreeMode]}
                 navigation={{
-                  prevEl: '.swiper-button-prev',
-                  nextEl: '.swiper-button-next',
+                  prevEl: ".swiper-button-prev",
+                  nextEl: ".swiper-button-next",
                 }}
                 thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
                 spaceBetween={10}
@@ -376,7 +375,7 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
                 {uniqueImages.map((image, index) => (
                   <SwiperSlide key={index}>
                     <img
-                      src={image}
+                      src={image || "/placeholder.svg"}
                       alt={`${product.name} view ${index + 1}`}
                       className="w-full object-contain"
                     />
@@ -403,7 +402,7 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
               {uniqueImages.map((image, index) => (
                 <SwiperSlide key={index}>
                   <img
-                    src={image}
+                    src={image || "/placeholder.svg"}
                     alt={`${product.name} thumbnail ${index + 1}`}
                     className="w-full h-auto object-contain rounded-lg border border-gray-200"
                   />
@@ -415,16 +414,11 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
           {/* Product Information */}
           <div className="space-y-6">
             <p className="text-sm text-gray-500 mb-2">SKU: {product.product_code}</p>
-            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              {product.name}
-            </h1>
+            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
             <div className="flex items-center space-x-4">
               <div className="flex items-center">
                 {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                  />
+                  <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                 ))}
                 <span className="ml-2 text-sm text-gray-600">(4.8) • {product.sold_stock} sold</span>
               </div>
@@ -432,13 +426,9 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
 
             {/* Pricing */}
             <div className="flex items-baseline space-x-3">
-              <span className="text-3xl font-bold text-gray-900">
-                ৳{currentPrice.toFixed(2)}
-              </span>
+              <span className="text-3xl font-bold text-gray-900">৳{currentPrice.toFixed(2)}</span>
               {product.previous_price && (
-                <span className="text-lg text-gray-500 line-through">
-                  ৳{previousPrice.toFixed(2)}
-                </span>
+                <span className="text-lg text-gray-500 line-through">৳{previousPrice.toFixed(2)}</span>
               )}
               {discountPercentage > 0 && (
                 <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-sm font-semibold">
@@ -455,8 +445,8 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
                     <h3 className="text-lg font-semibold mb-3">{attrName}</h3>
                     <div className="flex flex-wrap gap-2">
                       {attrGroup.map((item) => {
-                        const isSelected = selectedAttributes[attrName]?.id === item.value.id;
-                        const isDisabled = item.stock === 0;
+                        const isSelected = selectedAttributes[attrName]?.id === item.value.id
+                        const isDisabled = item.stock === 0
                         return (
                           <button
                             key={item.value.id}
@@ -464,23 +454,21 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
                             disabled={isDisabled}
                             className={`px-3 py-1 border-2 rounded-lg text-center font-medium transition-all ${
                               isSelected
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
                                 : isDisabled
-                                ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                  ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
                             }`}
                           >
                             {item.value.value}
                           </button>
-                        );
+                        )
                       })}
                     </div>
                   </div>
                 ))}
                 {!selectedVariation && (
-                  <div className="text-red-600 text-sm">
-                    Please select a valid combination of attributes.
-                  </div>
+                  <div className="text-red-600 text-sm">Please select a valid combination of attributes.</div>
                 )}
               </div>
             )}
@@ -506,9 +494,7 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
-                <span className="text-sm text-gray-600">
-                  {selectedVariation?.stock || product.stock} available
-                </span>
+                <span className="text-sm text-gray-600">{selectedVariation?.stock || product.stock} available</span>
               </div>
             </div>
 
@@ -567,9 +553,7 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
                 ) : (
                   <Truck className="w-5 h-5 text-gray-400" />
                 )}
-                <span className="text-sm">
-                  {product.is_free_delivery ? 'Free Delivery' : 'Delivery Available'}
-                </span>
+                <span className="text-sm">{product.is_free_delivery ? "Free Delivery" : "Delivery Available"}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-5 h-5 text-green-600" />
@@ -595,5 +579,5 @@ export default function ProductPage({ params: paramsPromise }: ProductPageProps)
         </div>
       </div>
     </div>
-  );
+  )
 }

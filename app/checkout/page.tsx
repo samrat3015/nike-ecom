@@ -63,7 +63,6 @@ export default function Checkout() {
   const [area, setArea] = useState("inside_dhaka");
   const [isLoading, setIsLoading] = useState(false);
 
-  const eventID = uuidv4();
   const { trackInitiateCheckout } = useFbPixel();
 
   // Safe access: default if settings not loaded yet
@@ -93,9 +92,9 @@ export default function Checkout() {
 
   useEffect(() => {
     if (cartItems.length > 0 && cartTotal > 0) {
-      trackInitiateCheckout(cartItems, cartTotal, eventID);
+      trackInitiateCheckout(cartItems, cartTotal);
     }
-  }, [cartItems, cartTotal, eventID, trackInitiateCheckout]);
+  }, [cartItems, cartTotal, trackInitiateCheckout]);
 
   // --- Helper functions ---
   const getOrderIdentifier = () => {

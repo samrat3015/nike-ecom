@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { Order } from "@/types";
 import { useFbPixel } from "@/hooks/useFbPixel";
 
@@ -12,7 +11,6 @@ interface Props {
 export function SuccessClient({ order }: Props) {
   const { trackPurchase } = useFbPixel();
   const hasTracked = useRef(false);
-  const eventID = uuidv4();
 
   useEffect(() => {
     const trackedOrders = JSON.parse(
@@ -22,7 +20,7 @@ export function SuccessClient({ order }: Props) {
     if (trackedOrders.includes(order.order_number)) return;
 
     if (!hasTracked.current) {
-      trackPurchase(order, eventID);
+      trackPurchase(order);
       hasTracked.current = true;
       trackedOrders.push(order.order_number);
       localStorage.setItem("trackedOrders", JSON.stringify(trackedOrders));
@@ -31,7 +29,7 @@ export function SuccessClient({ order }: Props) {
     return () => {
       hasTracked.current = false;
     };
-  }, [order.order_number, trackPurchase, eventID]);
+  }, [order.order_number, trackPurchase]);
 
   return (
     <div className="max-w-4xl min-h-[50vh] flex items-center justify-center mx-auto p-6">

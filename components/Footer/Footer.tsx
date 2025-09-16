@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { s } from "motion/react-client";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -59,7 +60,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-3 grid-cols-1 gap-10">
           <div className="footer_widget">
             <div className="footer_content">
-              <img src={media?.footer_logo} alt="footer logo" />
+              <img src={media?.footer_logo} alt="footer logo" className="w-40" />
               <p className="mt-4">{settings?.attention_notice}</p>
             </div>
           </div>
@@ -68,7 +69,7 @@ export default function Footer() {
             <ul>
               {pages.map((page) => (
                 <li key={page.id}>
-                  <a href={`/pages/${page.slug}`}>{page.name}</a>
+                  <Link href={`/pages/${page.slug}`}>{page.name}</Link>
                 </li>
               ))}
             </ul>
